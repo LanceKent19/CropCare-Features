@@ -18,7 +18,6 @@
 
 void setup() {
   Serial.begin(115200); // the baudrate I use
-  
 }
 
 void loop() {
