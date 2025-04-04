@@ -28,22 +28,9 @@ void loop() {
   lcd.setCursor(10, 0);
   lcd.print(tempC, 2);
 
-  // The condition statements for the soil Condition based on the moisture percent above
-  if (moisturePercent <= 10) {
-    soilCondition = "Very Dry";  // will print Very Dry if the value is 10 or lower
-  } else if (moisturePercent <= 40) {
-    soilCondition = "Dry Soil";  // will print Dry Soil if the value is 40 or lower
-  } else if (moisturePercent <= 80) {
-    soilCondition = "Moist Soil";  // will print Moist Soil if the value is 80 or lower
-  } else if (moisturePercent < 100) {
-    soilCondition = "Very Wet/Near Mud";  // it will print Very Wet/Near Mud if the value of the moisturePercent is lower than 100
-  } else if (moisturePercent == 100) {
-    soilCondition = "Submerged in Water";  // will print if the moisturePercent has reached the maximum moisture percent
-  }
-  Serial.print("\nSoil Moisture Value: ");
-  Serial.println(moistureValue);  // Print value to Serial Monitor
-  Serial.print("Soil Moisture Percentage: ");
-  Serial.print(moisturePercent);  // Print the Moisture percent based on the convertion
+  // Prints the Soil Moisture Value with the condition
+  Serial.print("Moisture: ");
+  Serial.print(soilSensor.getMoisturePercent());
   Serial.println(" %");
   Serial.print("Condition: ");
   Serial.println(soilSensor.getCondition());
