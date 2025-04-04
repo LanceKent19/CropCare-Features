@@ -1,18 +1,7 @@
 #include "PhSensor.h"
 // passing the constructors with variables
-PhSensor::PhSensor(int pin, float caliVal, LiquidCrystal_I2C lcd)
+PhSensor::PhSensor(int pin, float caliVal, LiquidCrystal_I2C& lcd)
   : pin(pin), caliVal(caliVal), lcd(lcd) {}
-
-void PhSensor::setupDisplay() { // setup for the ph sensor with lcd display
-    lcd.init();
-    lcd.backlight();
-    lcd.setCursor(5, 0);
-    lcd.print("CropCare");
-    lcd.setCursor(6, 1);
-    lcd.print("System");
-    delay(4000);
-    lcd.clear();
-}
 
 float PhSensor::readPh() { // Reading the ph sensors
     for (int i = 0; i < 10; i++) {

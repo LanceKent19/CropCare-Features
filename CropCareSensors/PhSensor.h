@@ -6,16 +6,16 @@
 #include <LiquidCrystal_I2C.h>
 
 class PhSensor {
-private:  // private variables for abstraction
+private:
   int pin;
   float caliVal;
   int buffer_arr[10];
-  LiquidCrystal_I2C lcd;  // objects for using the liquidcrystal
+  LiquidCrystal_I2C& lcd;  // Pass by reference (note the &)
 
-public:  // public constructor with requesting values of pin, calibrate value, and lcd
-  PhSensor(int pin, float caliVal, LiquidCrystal_I2C lcd);
-  void setupDisplay();  // method for initialize setup of PH Sensor
-  float readPh();       // method for reading the ph level
+public:
+  PhSensor(int pin, float caliVal, LiquidCrystal_I2C& lcd); // Constructor also uses &
+  void setupDisplay();
+  float readPh();
 };
 
 #endif
