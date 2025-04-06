@@ -14,7 +14,6 @@ private:
 
 public:
   PhSensor(int pin, float caliVal, LiquidCrystal_I2C& lcd); // Constructor also uses &
-  void setupDisplay();
   float readPh();
 };
 
