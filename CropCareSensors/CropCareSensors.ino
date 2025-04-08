@@ -1,7 +1,16 @@
 // Button On and Off
 #define LED_PIN 14
 #define BUTTON_PIN 4
+// LED condition 
+#define LED_SOIL_PIN 25
+#define SOIL_BUZZER_PIN 12 
 
+// Add these global variables at the top
+unsigned long dryStartTime = 0;
+bool dryTimerStarted = false;
+const unsigned long dryDelay = 3000;  // 3 seconds to confirm dryness
+
+int ledSoilState = LOW;
 // variables will change:
 int lastButtonState;
 int buttonState;
@@ -27,9 +36,13 @@ ToggleButton toggle(BUTTON_PIN, LED_PIN);
 void setup() {
   Serial.begin(115200);
   lcdSetup();
+  pinMode(LED_SOIL_PIN, OUTPUT);
+  pinMode(SOIL_BUZZER_PIN, OUTPUT);
   toggle.begin();
-  // tempSensor.begin();  // Starts the Temperature Sensor
+  // tempSensor.begin();  /   / Starts the Temperature Sensor
   lastButtonState = digitalRead(BUTTON_PIN);
+  digitalWrite(LED_SOIL_PIN, ledSoilState);
+  digitalWrite(SOIL_BUZZER_PIN, ledSoilState);
 }
 void loop() {
 
@@ -43,12 +56,14 @@ void loop() {
         if (ledState == HIGH) {
           Serial.println("Sensor Off");
           ledState = LOW;
+          digitalWrite(SOIL_BUZZER_PIN, HIGH);
         } else {
           Serial.println("Sensor On");
           ledState = HIGH;
+          digitalWrite(SOIL_BUZZER_PIN, HIGH);
         }
         digitalWrite(LED_PIN, ledState);
-      }
+      } 
     }
   }
   // Sensor + LCD update (every 500ms but non-blocking)
@@ -66,7 +81,12 @@ void loop() {
         lcdIsOn = false;
       }
       clearSoilMoistureDisplay();
-    }
+       // Force all indicators OFF just to be sure
+      digitalWrite(LED_SOIL_PIN, LOW);
+      digitalWrite(SOIL_BUZZER_PIN, LOW);
+      // digitalWrite(BUZZER_PIN, LOW);
+      ledSoilState = false;
+  }
   }
 }
 void lcdSetup() {
@@ -83,14 +103,49 @@ void lcdSoilMoistureSensor() {
   int moisture = soilSensor.getMoisturePercent();  // read ONCE
   String condition;
 
-  // Determine condition based on same percent
-  if (moisture <= 10) condition = "Very Dry";
-  else if (moisture <= 40) condition = "Dry";
-  else if (moisture <= 80) condition = "Moist";
-  else if (moisture < 100) condition = "Very Wet";
-  else condition = "Submerged";
+  // Idle sensor detection
+  if (moisture >= 30 && moisture <= 40) {
+    condition = "Sensor Idle";
+    ledSoilState = false;
+    dryTimerStarted = false;  // Reset timer if idle
+  } 
+  else if (moisture < 10 || moisture < 30) {
+    condition = (moisture < 10) ? "Very Dry" : "Dry";
 
-  // Serial output for checking
+    // Start the dry timer if not already started
+    if (!dryTimerStarted) {
+      dryStartTime = millis();
+      dryTimerStarted = true;
+    }
+
+    // Check if dryness lasted more than dryDelay
+    if (millis() - dryStartTime >= dryDelay) {
+      ledSoilState = true;  // Trigger alarm only after delay
+    } else {
+      ledSoilState = false; // Still waiting
+    }
+  } 
+  else if (moisture <= 60) {
+    condition = "Moist";
+    ledSoilState = false;
+    dryTimerStarted = false;  // Reset timer
+  } 
+  else if (moisture <= 90) {
+    condition = "Wet";
+    ledSoilState = false;
+    dryTimerStarted = false;
+  } 
+  else {
+    condition = "Submerged";
+    ledSoilState = true;
+    dryTimerStarted = false;
+  }
+
+  // OUTPUT CONTROL
+  digitalWrite(LED_SOIL_PIN, ledSoilState);
+  digitalWrite(SOIL_BUZZER_PIN, ledSoilState);
+
+  // Serial output
   Serial.print("Moisture: ");
   Serial.print(moisture);
   Serial.println(" %");
