@@ -2,17 +2,27 @@
 #define SOIL_MOISTURE_SENSOR_H
 
 #include <Arduino.h>
+#include <LiquidCrystal_I2C.h>
 
-class SoilMoistureSensor {  // the class of the headline file
-private:                    // private variables for accessing internally. Abstraction
+class SoilMoistureSensor {
+private:
   int pin;
   int dryValue, wetValue;
+  int ledPin, buzzerPin;
+  LiquidCrystal_I2C &lcd;
+  unsigned long dryStartTime;
+  bool dryTimerStarted;
+  const unsigned long dryDelay = 3000;
+
+  bool ledState;
 
 public:
-  SoilMoistureSensor(int pin, int dryVal, int wetVal);  // Creates a constructor with requesting the value of pins, the dry value and wet value
-  int readValue();                                      // variable storing the read value of the soil moisture sensor
-  int getMoisturePercent();                             // getter for returning the percent of the moisture
-  String getCondition();                                // returning the condition of the land if it is dry, wet or moist
+  SoilMoistureSensor(int pin, int dryVal, int wetVal, int ledPin, int buzzerPin, LiquidCrystal_I2C &lcd);
+  int readValue();
+  int getMoisturePercent();
+  void update(bool isActive);
+  void powerOn();
+  void powerOff();
 };
 
 #endif
