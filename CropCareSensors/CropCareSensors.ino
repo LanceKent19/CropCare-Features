@@ -1,9 +1,12 @@
-// Button On and Off
-#define LED_PIN 14
-#define BUTTON_PIN 4
-// LED condition
+// BUTTON ON AND OFF PINS
+#define POWER_LED_PIN 14
+#define POWER_BUTTON_PIN 4
+#define POWER_BUZZER_PIN 13
+
+// SOIL MOISTURE SENSOR
 #define LED_SOIL_PIN 25
 #define SOIL_BUZZER_PIN 12
+// SOIL_PIN 34
 
 // variables will change:
 int lastButtonState;
@@ -27,7 +30,7 @@ unsigned long sensorUpdateInterval = 500;  // 500ms like your original delay
 LiquidCrystal_I2C lcd(0x27, 16, 2);                                                 // Creates and object of the lcd that is 16x2
 SoilMoistureSensor soilSensor(34, 3500, 1000, LED_SOIL_PIN, SOIL_BUZZER_PIN, lcd);  // Creates and object of the class SoilMoistureSensor and passed the 34 GPIO pin with dry and wet value
 // PhSensor phSensor(35, 21.34, lcd);              // Creates and object of the class PhSensor and passed the 35 GPIO pin
-ToggleButton toggle(BUTTON_PIN, LED_PIN);
+ToggleButton toggle(POWER_BUTTON_PIN, POWER_LED_PIN);
 void setup() {
   Serial.begin(115200);
   lcd.init();
@@ -40,15 +43,18 @@ void setup() {
   delay(2000);  // Show for 2 seconds
   lcd.clear();
   lcd.noBacklight();
+
   pinMode(LED_SOIL_PIN, OUTPUT);
   pinMode(SOIL_BUZZER_PIN, OUTPUT);
+  pinMode(POWER_BUZZER_PIN, OUTPUT);
   toggle.begin();
   // tempSensor.begin();  /   / Starts the Temperature Sensor
-  lastButtonState = digitalRead(BUTTON_PIN);
+  lastButtonState = digitalRead(POWER_BUTTON_PIN);
 }
+
 void loop() {
   if (millis() - lastTimeButtonChangedState >= debounceDuration) {
-    buttonState = digitalRead(BUTTON_PIN);
+    buttonState = digitalRead(POWER_BUTTON_PIN);
     if (buttonState != lastButtonState) {
       lastTimeButtonChangedState = millis();
       lastButtonState = buttonState;
@@ -58,15 +64,14 @@ void loop() {
           Serial.println("Sensor Off");
           ledState = LOW;
           soilSensor.powerOff();
-          delay(100);
+          soilSensor.beepPowerBuzzer(150, 2);  // or beepPowerBuzzer(150, 2) if you want 2 beeps
         } else {
           Serial.println("Sensor On");
           ledState = HIGH;
           soilSensor.powerOn();
-          delay(100);
+          soilSensor.beepPowerBuzzer(150, 1);  // or beepPowerBuzzer(150, 2) if you want 2 beeps
         }
-        digitalWrite(LED_PIN, ledState);
-        digitalWrite(SOIL_BUZZER_PIN, HIGH);
+        digitalWrite(POWER_LED_PIN, ledState);
       }
     }
   }

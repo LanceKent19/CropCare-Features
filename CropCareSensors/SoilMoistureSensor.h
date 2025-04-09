@@ -13,7 +13,6 @@ private:
   unsigned long dryStartTime;
   bool dryTimerStarted;
   const unsigned long dryDelay = 3000;
-
   bool ledState;
 
 public:
@@ -23,6 +22,7 @@ public:
   void update(bool isActive);
   void powerOn();
   void powerOff();
+  void beepPowerBuzzer(int duration = 150,int count =1);
 };
 
 #endif
