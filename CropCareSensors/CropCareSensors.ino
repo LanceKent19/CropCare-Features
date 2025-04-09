@@ -92,6 +92,7 @@ void loop() {
     if (ledState == HIGH) {
       soilSensor.update(true);
       tempSensor.lcdTemperatureSensor();
+      phSensor.readPh();
     }
   }
 } 
