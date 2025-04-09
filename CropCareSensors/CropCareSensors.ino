@@ -8,8 +8,12 @@
 #define SOIL_BUZZER_PIN 12
 #define SOIL_PIN 34
 
-// TEMPERATURE SENSOR PINS
+// TEMPERATURE SENSOR PIN
 #define TEMPERATURE_PIN 23
+
+// PH LEVEL SENSOR PINS
+#define PH_LEVEL_PIN 35
+
 // variables will change:
 int lastButtonState;
 int buttonState;
@@ -24,19 +28,20 @@ unsigned long sensorUpdateInterval = 500;  // 500ms like your original delay
 // Classess and Libraries
 #include "TemperatureSensor.h"
 #include "SoilMoistureSensor.h"
-// #include "PhSensor.h"
+#include "PhSensor.h"
 #include <LiquidCrystal_I2C.h>
 
 // Define objects
-TemperatureSensor tempSensor(TEMPERATURE_PIN);               // Creates and object of the class TemperatureSensor and passed the 23 GPIO pin
 LiquidCrystal_I2C lcd(0x27, 16, 2);                                                 // Creates and object of the lcd that is 16x2
+TemperatureSensor tempSensor(TEMPERATURE_PIN, lcd);               // Creates and object of the class TemperatureSensor and passed the 23 GPIO pin
 SoilMoistureSensor soilSensor(SOIL_PIN, 3500, 1000, LED_SOIL_PIN, SOIL_BUZZER_PIN, lcd);  // Creates and object of the class SoilMoistureSensor and passed the 34 GPIO pin with dry and wet value
-// PhSensor phSensor(35, 21.34, lcd);              // Creates and object of the class PhSensor and passed the 35 GPIO pin
+PhSensor phSensor(PH_LEVEL_PIN, 21.34, lcd);              // Creates and object of the class PhSensor and passed the 35 GPIO pin
+
 void setup() {
   Serial.begin(115200);
+  
   lcd.init();
   lcd.backlight();
-
   lcd.setCursor(0, 0);
   lcd.print("CropCare System");
   lcd.setCursor(0, 1);
@@ -52,6 +57,7 @@ void setup() {
   pinMode(POWER_LED_PIN, OUTPUT);
   pinMode(POWER_BUTTON_PIN, INPUT);
   digitalWrite(POWER_LED_PIN, ledState);
+
   tempSensor.begin();  // Starts the Temperature Sensor
   lastButtonState = digitalRead(POWER_BUTTON_PIN);
 }
@@ -85,23 +91,7 @@ void loop() {
 
     if (ledState == HIGH) {
       soilSensor.update(true);
-      lcdTemperatureSensor();
+      tempSensor.lcdTemperatureSensor();
     }
   }
-}
-
-void lcdTemperatureSensor(){
-  float tempC = tempSensor.getCelsius();     // Passed the celcius value in the float from TemperatureSensor.cpp
-  float tempF = (tempC * 9.0 / 5.0) + 32.0;  //  Converts the celcius into fahrenheit manually
-  // Prints the Temperature and Fahrenheit Output
-  Serial.print("\nTemperature: ");
-  Serial.print(tempC);
-  Serial.println(" °C");
-  Serial.print("Fahrenheit: ");
-  Serial.println(tempF);
-
-  lcd.setCursor(9, 0);
-  lcd.print(tempC, 2);
-  lcd.write(223); //This prints the  ° symbol
-  lcd.print("C");
-}
+} 
