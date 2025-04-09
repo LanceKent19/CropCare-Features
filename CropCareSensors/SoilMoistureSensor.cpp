@@ -55,7 +55,7 @@ void SoilMoistureSensor::update(bool isActive) {
   String condition;
 
   if (moisture >= 30 && moisture <= 40) {
-    condition = "Sensor Idle";
+    condition = "Idle";
     ledState = false;
     dryTimerStarted = false;
   } else if (moisture < 10 || moisture < 30) {
