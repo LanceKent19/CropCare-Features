@@ -40,8 +40,8 @@ float PhSensor::readPh() {
   lcd.print(ph_act, 2);
 
   // Print to Serial
-  Serial.print("Avg Analog: "); Serial.println(avgval / 6);
-  Serial.print("Voltage: "); Serial.println(voltage, 3);
+  // Serial.print("Avg Analog: "); Serial.println(avgval / 6);
+  // Serial.print("Voltage: "); Serial.println(voltage, 3);
   Serial.print("pH Value: "); Serial.println(ph_act);
 
   return ph_act;

@@ -94,8 +94,5 @@ void SoilMoistureSensor::update(bool isActive) {
   lcd.print(moisture);
   lcd.print("%");
 
-  lcd.setCursor(7, 1);
-  lcd.print("          ");
-  lcd.setCursor(7, 1);
-  lcd.print(condition);
+
 }

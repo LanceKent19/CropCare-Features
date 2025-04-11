@@ -1,7 +1,6 @@
 // BUTTON ON AND OFF PINS
-#define POWER_LED_PIN 14
+#define POWER_LED_PIN 14   
 #define POWER_BUTTON_PIN 4
-#define POWER_BUZZER_PIN 13
 
 // SOIL MOISTURE SENSOR PINS
 #define LED_SOIL_PIN 25
@@ -12,7 +11,14 @@
 #define TEMPERATURE_PIN 23
 
 // PH LEVEL SENSOR PINS
-#define PH_LEVEL_PIN 35
+#define PH_LEVEL_PIN 35 
+
+// LCD PINS
+#define SCL_PINS 22
+#define SDA 21
+
+// HUMIDITY PINS
+#define HUMIDITY_PIN 19
 
 // variables will change:
 int lastButtonState;
@@ -30,12 +36,14 @@ unsigned long sensorUpdateInterval = 500;  // 500ms like your original delay
 #include "SoilMoistureSensor.h"
 #include "PhSensor.h"
 #include <LiquidCrystal_I2C.h>
+#include <HumiditySensor.h>
 
 // Define objects
 LiquidCrystal_I2C lcd(0x27, 16, 2);                                                 // Creates and object of the lcd that is 16x2
 TemperatureSensor tempSensor(TEMPERATURE_PIN, lcd);               // Creates and object of the class TemperatureSensor and passed the 23 GPIO pin
 SoilMoistureSensor soilSensor(SOIL_PIN, 3500, 1000, LED_SOIL_PIN, SOIL_BUZZER_PIN, lcd);  // Creates and object of the class SoilMoistureSensor and passed the 34 GPIO pin with dry and wet value
 PhSensor phSensor(PH_LEVEL_PIN, 21.34, lcd);              // Creates and object of the class PhSensor and passed the 35 GPIO pin
+HumiditySensor humiditySensor(HUMIDITY_PIN, lcd);
 
 void setup() {
   Serial.begin(115200);
@@ -52,12 +60,11 @@ void setup() {
 
   pinMode(LED_SOIL_PIN, OUTPUT);
   pinMode(SOIL_BUZZER_PIN, OUTPUT);
-  pinMode(POWER_BUZZER_PIN, OUTPUT);
 
   pinMode(POWER_LED_PIN, OUTPUT);
   pinMode(POWER_BUTTON_PIN, INPUT);
   digitalWrite(POWER_LED_PIN, ledState);
-
+  humiditySensor.begin();
   tempSensor.begin();  // Starts the Temperature Sensor
   lastButtonState = digitalRead(POWER_BUTTON_PIN);
 }
@@ -93,6 +100,7 @@ void loop() {
       soilSensor.update(true);
       tempSensor.lcdTemperatureSensor();
       phSensor.readPh();
+      humiditySensor.update(true);
     }
   }
 } 
