@@ -1,4 +1,4 @@
-// 
+// SYSTEM BUTTONS AND INCLUDE
   // BUTTON ON AND OFF PINS
   #define POWER_LED_ON_PIN 14   
   #define POWER_BUTTON_PIN 4
@@ -15,6 +15,10 @@
 
   // PH LEVEL SENSOR PINS
   #define PH_LEVEL_PIN 36 
+  #define PH_RED_LED_PIN 18
+  #define PH_GREEN_LED_PIN 5
+  #define PH_BLUE_LED_PIN 17
+  #define PH_BUZZER_PIN 16
 
   // LCD PINS
   #define SCL_PINS 22
@@ -45,8 +49,17 @@
 LiquidCrystal_I2C lcd(0x27, 16, 2);                                                 // Creates and object of the lcd that is 16x2
 TemperatureSensor tempSensor(TEMPERATURE_PIN, lcd);               // Creates and object of the class TemperatureSensor and passed the 23 GPIO pin
 SoilMoistureSensor soilSensor(SOIL_PIN, 3500, 1000, LED_SOIL_PIN, SOIL_BUZZER_PIN, lcd);  // Creates and object of the class SoilMoistureSensor and passed the 34 GPIO pin with dry and wet value
-PhSensor phSensor(PH_LEVEL_PIN, 21.40, lcd);              // Creates and object of the class PhSensor and passed the 35 GPIO pin
+PhSensor phSensor(PH_LEVEL_PIN, 21.40, PH_RED_LED_PIN, PH_GREEN_LED_PIN, PH_BLUE_LED_PIN, PH_BUZZER_PIN ,lcd);              // Creates and object of the class PhSensor and passed the 35 GPIO pin
 HumiditySensor humiditySensor(HUMIDITY_PIN, lcd);
+
+void beep(int duration, int count) {
+  for (int i = 0; i < count; i++) {
+    digitalWrite(POWER_BUZZER_PIN, HIGH);
+    delay(duration);
+    digitalWrite(POWER_BUZZER_PIN, LOW);
+    delay(100);  // short pause between beeps
+  }
+}
 
 void setup() {
   Serial.begin(115200);
@@ -65,9 +78,19 @@ void setup() {
   pinMode(SOIL_BUZZER_PIN, OUTPUT);
   pinMode(POWER_BUZZER_PIN,OUTPUT);
 
+  pinMode(PH_RED_LED_PIN, OUTPUT);
+  pinMode(PH_GREEN_LED_PIN, OUTPUT);
+  pinMode(PH_BLUE_LED_PIN, OUTPUT);
+  pinMode(PH_BUZZER_PIN, OUTPUT);
+
+  digitalWrite(PH_RED_LED_PIN, LOW);
+  digitalWrite(PH_GREEN_LED_PIN, LOW);
+  digitalWrite(PH_BLUE_LED_PIN, LOW);
+
   pinMode(POWER_LED_ON_PIN, OUTPUT);
   pinMode(POWER_LED_OFF_PIN, OUTPUT);
   pinMode(POWER_BUTTON_PIN, INPUT_PULLUP);
+
   digitalWrite(POWER_LED_ON_PIN, ledState);
   digitalWrite(POWER_BUTTON_PIN, ledState);
   humiditySensor.begin();
@@ -87,16 +110,17 @@ void loop() {
           Serial.println("Sensor Off");
           ledState = LOW;
           soilSensor.powerOff();
-          // soilSensor.beepPowerBuzzer(150, 2);  // or beepPowerBuzzer(150, 2) if you want 2 beeps
+          beep(150, 2); 
           digitalWrite(POWER_LED_OFF_PIN,HIGH);
-          digitalWrite(POWER_BUZZER_PIN, HIGH);
+          digitalWrite(PH_RED_LED_PIN, LOW);
+          digitalWrite(PH_GREEN_LED_PIN, LOW);
+          digitalWrite(PH_BLUE_LED_PIN, LOW);
         } else {
           Serial.println("Sensor On");
           ledState = HIGH;
           soilSensor.powerOn();
-          // soilSensor.beepPowerBuzzer(150, 1);  // or beepPowerBuzzer(150, 2) if you want 2 beeps
+          beep(150, 1);  
           digitalWrite(POWER_LED_OFF_PIN,LOW);
-          digitalWrite(POWER_BUZZER_PIN, HIGH);
         }
         digitalWrite(POWER_LED_ON_PIN, ledState);
       }
