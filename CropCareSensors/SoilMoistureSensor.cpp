@@ -15,34 +15,14 @@ int SoilMoistureSensor::getMoisturePercent() {
 }
 
 void SoilMoistureSensor::powerOn() {
-  lcd.clear();
-  lcd.backlight();
-  lcd.setCursor(3, 0);
-  lcd.print("POWER ON");
-  delay(1000);  // Show "System On" briefly
-  lcd.clear();
+  ledState = true;
 }
 
 void SoilMoistureSensor::powerOff() {
-  lcd.clear();
-  lcd.setCursor(3, 0);
-  lcd.print("POWER OFF");
-  delay(1000);  // Optional: small delay before LCD fully turns off
-  lcd.clear();
-  lcd.noBacklight();
-
   digitalWrite(ledPin, LOW);
   digitalWrite(buzzerPin, LOW);
   ledState = false;
   dryTimerStarted = false;
-}
-void SoilMoistureSensor::beepPowerBuzzer(int duration, int count) {
-  for (int i = 0; i < count; i++) {
-    digitalWrite(buzzerPin, HIGH);
-    delay(duration);
-    digitalWrite(buzzerPin, LOW);
-    delay(100);  // short pause between beeps
-  }
 }
 
 void SoilMoistureSensor::update(bool isActive) {

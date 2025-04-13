@@ -1,6 +1,6 @@
 // SYSTEM BUTTONS AND INCLUDE
   // BUTTON ON AND OFF PINS
-  #define POWER_LED_ON_PIN 14   
+  #define POWER_LED_ON_PIN 14
   #define POWER_BUTTON_PIN 4
   #define POWER_LED_OFF_PIN 26
   #define POWER_BUZZER_PIN 13
@@ -14,7 +14,7 @@
   #define TEMPERATURE_PIN 23
 
   // PH LEVEL SENSOR PINS
-  #define PH_LEVEL_PIN 36 
+  #define PH_LEVEL_PIN 36
   #define PH_RED_LED_PIN 18
   #define PH_GREEN_LED_PIN 5
   #define PH_BLUE_LED_PIN 17
@@ -31,8 +31,9 @@
   #include "TemperatureSensor.h"
   #include "SoilMoistureSensor.h"
   #include "PhSensor.h"
-  #include <LiquidCrystal_I2C.h>
-  #include <HumiditySensor.h>
+  #include "HumiditySensor.h"
+  #include "LCDDisplay.h"
+  #include "BeepSound.h"
 
 // variables will change:
   int lastButtonState;
@@ -46,37 +47,20 @@
   unsigned long sensorUpdateInterval = 500;  // 500ms like your original delay
 
 // Define objects
-LiquidCrystal_I2C lcd(0x27, 16, 2);                                                 // Creates and object of the lcd that is 16x2
-TemperatureSensor tempSensor(TEMPERATURE_PIN, lcd);               // Creates and object of the class TemperatureSensor and passed the 23 GPIO pin
-SoilMoistureSensor soilSensor(SOIL_PIN, 3500, 1000, LED_SOIL_PIN, SOIL_BUZZER_PIN, lcd);  // Creates and object of the class SoilMoistureSensor and passed the 34 GPIO pin with dry and wet value
-PhSensor phSensor(PH_LEVEL_PIN, 21.40, PH_RED_LED_PIN, PH_GREEN_LED_PIN, PH_BLUE_LED_PIN, PH_BUZZER_PIN ,lcd);              // Creates and object of the class PhSensor and passed the 35 GPIO pin
-HumiditySensor humiditySensor(HUMIDITY_PIN, lcd);
-
-void beep(int duration, int count) {
-  for (int i = 0; i < count; i++) {
-    digitalWrite(POWER_BUZZER_PIN, HIGH);
-    delay(duration);
-    digitalWrite(POWER_BUZZER_PIN, LOW);
-    delay(100);  // short pause between beeps
-  }
-}
+  BeepSound beepSound(POWER_BUZZER_PIN);
+  LCDDisplay lcdDisplay;
+  TemperatureSensor tempSensor(TEMPERATURE_PIN, lcdDisplay.getLCD());                                                             // Creates and object of the class TemperatureSensor and passed the 23 GPIO pin
+  SoilMoistureSensor soilSensor(SOIL_PIN, 3500, 1000, LED_SOIL_PIN, SOIL_BUZZER_PIN, lcdDisplay.getLCD());                        // Creates and object of the class SoilMoistureSensor and passed the 34 GPIO pin with dry and wet value
+  PhSensor phSensor(PH_LEVEL_PIN, 21.40, PH_RED_LED_PIN, PH_GREEN_LED_PIN, PH_BLUE_LED_PIN, PH_BUZZER_PIN, lcdDisplay.getLCD());  // Creates and object of the class PhSensor and passed the 35 GPIO pin
+  HumiditySensor humiditySensor(HUMIDITY_PIN, lcdDisplay.getLCD());
 
 void setup() {
   Serial.begin(115200);
-  
-  lcd.init();
-  lcd.backlight();
-  lcd.setCursor(0, 0);
-  lcd.print("CropCare System");
-  lcd.setCursor(0, 1);
-  lcd.print("Setup...");
-  delay(2000);  // Show for 2 seconds
-  lcd.clear();
-  lcd.noBacklight();
 
+  lcdDisplay.begin();
   pinMode(LED_SOIL_PIN, OUTPUT);
   pinMode(SOIL_BUZZER_PIN, OUTPUT);
-  pinMode(POWER_BUZZER_PIN,OUTPUT);
+  pinMode(POWER_BUZZER_PIN, OUTPUT);
 
   pinMode(PH_RED_LED_PIN, OUTPUT);
   pinMode(PH_GREEN_LED_PIN, OUTPUT);
@@ -92,7 +76,7 @@ void setup() {
   pinMode(POWER_BUTTON_PIN, INPUT_PULLUP);
 
   digitalWrite(POWER_LED_ON_PIN, ledState);
-  digitalWrite(POWER_BUTTON_PIN, ledState);
+
   humiditySensor.begin();
   tempSensor.begin();  // Starts the Temperature Sensor
   lastButtonState = digitalRead(POWER_BUTTON_PIN);
@@ -110,8 +94,9 @@ void loop() {
           Serial.println("Sensor Off");
           ledState = LOW;
           soilSensor.powerOff();
-          beep(150, 2); 
-          digitalWrite(POWER_LED_OFF_PIN,HIGH);
+          lcdDisplay.showPowerStatus(false);
+          beepSound.beepBuzzer(150,2);
+          digitalWrite(POWER_LED_OFF_PIN, HIGH);
           digitalWrite(PH_RED_LED_PIN, LOW);
           digitalWrite(PH_GREEN_LED_PIN, LOW);
           digitalWrite(PH_BLUE_LED_PIN, LOW);
@@ -119,8 +104,9 @@ void loop() {
           Serial.println("Sensor On");
           ledState = HIGH;
           soilSensor.powerOn();
-          beep(150, 1);  
-          digitalWrite(POWER_LED_OFF_PIN,LOW);
+          lcdDisplay.showPowerStatus(true);
+          beepSound.beepBuzzer(150,1);
+          digitalWrite(POWER_LED_OFF_PIN, LOW);
         }
         digitalWrite(POWER_LED_ON_PIN, ledState);
       }
@@ -137,4 +123,4 @@ void loop() {
       humiditySensor.update(true);
     }
   }
-} 
+}
