@@ -16,7 +16,7 @@ void HumiditySensor::update(bool showOnLCD) {
 
     lcd->setCursor(8, 1);
     lcd->print("Hum:");
-    lcd->setCursor(11, 1);
+    lcd->setCursor(12, 1);
     lcd->print(humidity);
     lcd->print(" %");
   }

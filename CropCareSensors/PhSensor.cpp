@@ -29,9 +29,10 @@ float PhSensor::readPh() {
   for (int i = 2; i < 8; i++) {
     avgval += buffer_arr[i];
   }
+  avgval /= 6;
 
-  float voltage = (float)avgval / 6.0 * 3.3 / 4095.0; // Adjusted for ESP32's 12-bit ADC
-  float ph_act = -4.34 * voltage + caliVal;
+  float voltage = (float)avgval * 3.3 / 4095.0;
+  float ph_act = -5.70 * voltage + caliVal;
 
   // Display on LCD
   lcd.setCursor(0, 0);
@@ -39,10 +40,8 @@ float PhSensor::readPh() {
   lcd.setCursor(3, 0);
   lcd.print(ph_act, 2);
 
-  // Print to Serial
-  // Serial.print("Avg Analog: "); Serial.println(avgval / 6);
-  // Serial.print("Voltage: "); Serial.println(voltage, 3);
-  Serial.print("pH Value: "); Serial.println(ph_act);
+  Serial.print("pH Value: "); 
+  Serial.println(ph_act);
 
   return ph_act;
 }
