@@ -1,6 +1,8 @@
 // BUTTON ON AND OFF PINS
-#define POWER_LED_PIN 14   
+#define POWER_LED_ON_PIN 14   
 #define POWER_BUTTON_PIN 4
+#define POWER_LED_OFF_PIN 26
+#define POWER_BUZZER_PIN 13
 
 // SOIL MOISTURE SENSOR PINS
 #define LED_SOIL_PIN 25
@@ -60,10 +62,13 @@ void setup() {
 
   pinMode(LED_SOIL_PIN, OUTPUT);
   pinMode(SOIL_BUZZER_PIN, OUTPUT);
+  pinMode(POWER_BUZZER_PIN,OUTPUT);
 
-  pinMode(POWER_LED_PIN, OUTPUT);
-  pinMode(POWER_BUTTON_PIN, INPUT);
-  digitalWrite(POWER_LED_PIN, ledState);
+  pinMode(POWER_LED_ON_PIN, OUTPUT);
+  pinMode(POWER_LED_OFF_PIN, OUTPUT);
+  pinMode(POWER_BUTTON_PIN, INPUT_PULLUP);
+  digitalWrite(POWER_LED_ON_PIN, ledState);
+  digitalWrite(POWER_BUTTON_PIN, ledState);
   humiditySensor.begin();
   tempSensor.begin();  // Starts the Temperature Sensor
   lastButtonState = digitalRead(POWER_BUTTON_PIN);
@@ -81,14 +86,18 @@ void loop() {
           Serial.println("Sensor Off");
           ledState = LOW;
           soilSensor.powerOff();
-          soilSensor.beepPowerBuzzer(150, 2);  // or beepPowerBuzzer(150, 2) if you want 2 beeps
+          // soilSensor.beepPowerBuzzer(150, 2);  // or beepPowerBuzzer(150, 2) if you want 2 beeps
+          digitalWrite(POWER_LED_OFF_PIN,HIGH);
+          digitalWrite(POWER_BUZZER_PIN, HIGH);
         } else {
           Serial.println("Sensor On");
           ledState = HIGH;
           soilSensor.powerOn();
-          soilSensor.beepPowerBuzzer(150, 1);  // or beepPowerBuzzer(150, 2) if you want 2 beeps
+          // soilSensor.beepPowerBuzzer(150, 1);  // or beepPowerBuzzer(150, 2) if you want 2 beeps
+          digitalWrite(POWER_LED_OFF_PIN,LOW);
+          digitalWrite(POWER_BUZZER_PIN, HIGH);
         }
-        digitalWrite(POWER_LED_PIN, ledState);
+        digitalWrite(POWER_LED_ON_PIN, ledState);
       }
     }
   }
