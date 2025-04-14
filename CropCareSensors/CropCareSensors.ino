@@ -54,7 +54,7 @@
   TemperatureSensor tempSensor(TEMPERATURE_PIN, lcdDisplay.getLCD(), wifiManager);                                                             // Creates and object of the class TemperatureSensor and passed the 23 GPIO pin
   SoilMoistureSensor soilSensor(SOIL_PIN, 3500, 1000, LED_SOIL_PIN, SOIL_BUZZER_PIN, lcdDisplay.getLCD(), wifiManager);                        // Creates and object of the class SoilMoistureSensor and passed the 34 GPIO pin with dry and wet value
   PhSensor phSensor(PH_LEVEL_PIN, 21.40, PH_RED_LED_PIN, PH_GREEN_LED_PIN, PH_BLUE_LED_PIN, PH_BUZZER_PIN, lcdDisplay.getLCD(),wifiManager);  // Creates and object of the class PhSensor and passed the 35 GPIO pin
-  HumiditySensor humiditySensor(HUMIDITY_PIN, lcdDisplay.getLCD());
+  HumiditySensor humiditySensor(HUMIDITY_PIN, lcdDisplay.getLCD(), wifiManager);
 
 void setup() {
   Serial.begin(115200);

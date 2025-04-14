@@ -1,7 +1,7 @@
 #include "HumiditySensor.h"
 
-HumiditySensor::HumiditySensor(int humidityPin, LiquidCrystal_I2C& display)
-  : pin(humidityPin), dht(humidityPin), lcd(&display) {}
+HumiditySensor::HumiditySensor(int humidityPin, LiquidCrystal_I2C& display, WiFiManager& wifiManager)
+  : pin(humidityPin), dht(humidityPin), lcd(&display), wifiManager(wifiManager) {}
 
 void HumiditySensor::begin() {
   dht.begin();
@@ -19,5 +19,7 @@ void HumiditySensor::update(bool showOnLCD) {
     lcd->setCursor(12, 1);
     lcd->print(humidity);
     lcd->print(" %");
+
+    sendHumidityToServer(humidity);
   }
 }
