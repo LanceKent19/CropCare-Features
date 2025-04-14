@@ -34,6 +34,7 @@
   #include "HumiditySensor.h"
   #include "LCDDisplay.h"
   #include "BeepSound.h"
+  #include "WifiManager.h"
 
 // variables will change:
   int lastButtonState;
@@ -47,10 +48,11 @@
   unsigned long sensorUpdateInterval = 500;  // 500ms like your original delay
 
 // DEFINING OBJECTS
+  WiFiManager wifiManager("THE MAGOLLADOS'S", "DEMO POWER");
   BeepSound beepSound(POWER_BUZZER_PIN);
   LCDDisplay lcdDisplay;
-  TemperatureSensor tempSensor(TEMPERATURE_PIN, lcdDisplay.getLCD());                                                             // Creates and object of the class TemperatureSensor and passed the 23 GPIO pin
-  SoilMoistureSensor soilSensor(SOIL_PIN, 3500, 1000, LED_SOIL_PIN, SOIL_BUZZER_PIN, lcdDisplay.getLCD());                        // Creates and object of the class SoilMoistureSensor and passed the 34 GPIO pin with dry and wet value
+  TemperatureSensor tempSensor(TEMPERATURE_PIN, lcdDisplay.getLCD(), wifiManager);                                                             // Creates and object of the class TemperatureSensor and passed the 23 GPIO pin
+  SoilMoistureSensor soilSensor(SOIL_PIN, 3500, 1000, LED_SOIL_PIN, SOIL_BUZZER_PIN, lcdDisplay.getLCD(), wifiManager);                        // Creates and object of the class SoilMoistureSensor and passed the 34 GPIO pin with dry and wet value
   PhSensor phSensor(PH_LEVEL_PIN, 21.40, PH_RED_LED_PIN, PH_GREEN_LED_PIN, PH_BLUE_LED_PIN, PH_BUZZER_PIN, lcdDisplay.getLCD());  // Creates and object of the class PhSensor and passed the 35 GPIO pin
   HumiditySensor humiditySensor(HUMIDITY_PIN, lcdDisplay.getLCD());
 
@@ -80,7 +82,7 @@ void setup() {
   humiditySensor.begin();
   
   tempSensor.begin();  // Starts the Temperature Sensor
-  tempSensor.connectWiFi();   // Connect to WiFi (only once in setup)
+  wifiManager.connect();
   
   lastButtonState = digitalRead(POWER_BUTTON_PIN);
 }

@@ -1,7 +1,7 @@
 #include "SoilMoistureSensor.h"
 
-SoilMoistureSensor::SoilMoistureSensor(int pin, int dryVal, int wetVal, int ledPin, int buzzerPin, LiquidCrystal_I2C &lcd)
-  : pin(pin), dryValue(dryVal), wetValue(wetVal), ledPin(ledPin), buzzerPin(buzzerPin), lcd(lcd),
+SoilMoistureSensor::SoilMoistureSensor(int pin, int dryVal, int wetVal, int ledPin, int buzzerPin, LiquidCrystal_I2C &lcd, WiFiManager &wifiManager)
+  : pin(pin), dryValue(dryVal), wetValue(wetVal), ledPin(ledPin), buzzerPin(buzzerPin), lcd(lcd), wifiManager(wifiManager),
     dryTimerStarted(false), dryStartTime(0), ledState(false) {}
 
 int SoilMoistureSensor::readValue() {
@@ -74,5 +74,5 @@ void SoilMoistureSensor::update(bool isActive) {
   lcd.print(moisture);
   lcd.print("%");
 
-
+  sendMoistToServer(moisture);
 }
