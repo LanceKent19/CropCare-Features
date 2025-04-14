@@ -1,8 +1,8 @@
 #include "PhSensor.h"
 
 // Constructor
-PhSensor::PhSensor(int pin, float caliVal, int redLed, int greenLed, int blueLed, int buzzer ,LiquidCrystal_I2C& lcd)
-  : pin(pin), caliVal(caliVal), redLed(redLed), greenLed(greenLed),blueLed(blueLed),buzzer(buzzer), lcd(lcd) {}
+PhSensor::PhSensor(int pin, float caliVal, int redLed, int greenLed, int blueLed, int buzzer ,LiquidCrystal_I2C& lcd, WiFiManager& wifiManager)
+  : pin(pin), caliVal(caliVal), redLed(redLed), greenLed(greenLed),blueLed(blueLed),buzzer(buzzer), lcd(lcd), wifiManager(wifiManager) {}
 
 float PhSensor::readPh() {
   int buffer_arr[10];
@@ -43,6 +43,7 @@ float PhSensor::readPh() {
   Serial.print("pH Value: "); 
   Serial.println(ph_act);
 
+  sendPhToServer(ph_act);
   if(ph_act <= 6.5){
     Serial.println("Acidic");
     digitalWrite(redLed, HIGH);
