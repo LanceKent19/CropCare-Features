@@ -16,16 +16,18 @@ float TemperatureSensor::getCelsius() {
 
 void TemperatureSensor::lcdTemperatureSensor() {
   float tempC = getCelsius();
-  float tempF = (tempC * 9.0 / 5.0) + 32.0;
+  // float tempF = (tempC * 9.0 / 5.0) + 32.0;
 
   Serial.print("\nTemperature: ");
   Serial.print(tempC);
   Serial.println(" °C");
-  Serial.print("Fahrenheit: ");
-  Serial.println(tempF);
+  // Serial.print("Fahrenheit: ");
+  // Serial.println(tempF);
 
   lcd.setCursor(9, 0);
   lcd.print(tempC, 2);
   lcd.write(223); // °
   lcd.print("C");
+
+  sendTemperatureToServer(tempC);
 }

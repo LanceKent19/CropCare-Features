@@ -46,7 +46,7 @@
   unsigned long debounceDuration = 50;
   unsigned long sensorUpdateInterval = 500;  // 500ms like your original delay
 
-// Define objects
+// DEFINING OBJECTS
   BeepSound beepSound(POWER_BUZZER_PIN);
   LCDDisplay lcdDisplay;
   TemperatureSensor tempSensor(TEMPERATURE_PIN, lcdDisplay.getLCD());                                                             // Creates and object of the class TemperatureSensor and passed the 23 GPIO pin
@@ -78,7 +78,10 @@ void setup() {
   digitalWrite(POWER_LED_ON_PIN, ledState);
 
   humiditySensor.begin();
+  
   tempSensor.begin();  // Starts the Temperature Sensor
+  tempSensor.connectWiFi();   // Connect to WiFi (only once in setup)
+  
   lastButtonState = digitalRead(POWER_BUTTON_PIN);
 }
 
