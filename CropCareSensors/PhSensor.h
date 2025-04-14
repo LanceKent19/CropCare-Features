@@ -4,6 +4,7 @@
   // Libraries with the communication of the PH Level Sensors
   #include <Arduino.h>
   #include <LiquidCrystal_I2C.h>
+  #include "WifiManager.h"
 
   class PhSensor {
   private:
@@ -16,7 +17,8 @@
     int greenLed;
     int blueLed;
     int buzzer;
-
+    WiFiManager& wifiManager;
+    const char* serverURL = "http://192.168.100.42:3000/update_ph.php";
   public:
     PhSensor(int pin, float caliVal,int redLed,int greenLed,int blueRed,int buzzer,LiquidCrystal_I2C& lcd); // Constructor also uses &
     float readPh();
