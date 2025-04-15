@@ -100,7 +100,8 @@ void setup() {
   humiditySensor.begin();
 
   phSensor.begin();  // ✅ CALL forcePowerOffUpdate() *inside* this method
-
+  humiditySensor.forcePowerOffUpdate();
+  tempSensor.forcePowerOffUpdate();
   // 9. Initialize button state
   lastButtonState = digitalRead(POWER_BUTTON_PIN);
 }

@@ -14,12 +14,24 @@ void HumiditySensor::update(bool showOnLCD) {
     Serial.print(humidity);
     Serial.println(" %");
 
-    lcd->setCursor(8, 1);
-    lcd->print("Hum:");
-    lcd->setCursor(12, 1);
-    lcd->print(humidity);
-    lcd->print(" %");
+    if (showOnLCD) {
+      lcd->setCursor(8, 1);
+      lcd->print("Hum:");
+      lcd->setCursor(12, 1);
+      lcd->print(humidity);
+      lcd->print(" % ");
+    }
 
     sendHumidityToServer(humidity);
   }
+}
+
+void HumiditySensor::sendHumidityToServer(int humidity) {
+  String body = "humiditySensor=" + String(humidity) + "&powerState=on";
+  wifiManager.sendHTTPPost(serverURL, body);
+}
+
+void HumiditySensor::forcePowerOffUpdate() {
+  String body = "humiditySensor=-&powerState=off";
+  wifiManager.sendHTTPPost(serverURL, body);
 }

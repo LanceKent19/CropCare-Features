@@ -21,11 +21,8 @@ public:                                                // public objects so that
   float getCelsius();                                  // Getter for returning the value celcius
   float getFahrenheit();                               // Getter for returning the value fahrenheit
   void lcdTemperatureSensor();
-
-  void sendTemperatureToServer(float temperature) {
-    String body = "tempSensor=" + String(temperature, 2);
-    wifiManager.sendHTTPPost(serverURL, body);
-  }
+  void sendTemperatureToServer(float temperature);
+  void forcePowerOffUpdate();  // Add this to support OFF updates
 };
 
 #endif

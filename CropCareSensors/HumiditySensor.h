@@ -15,15 +15,12 @@ private:
   const char* serverURL = "http://192.168.100.42:3000/update_humidity.php";
 
 public:
-  HumiditySensor(int humidityPin, LiquidCrystal_I2C& display, WiFiManager& wifiManager);  // Constructor
-  void begin();                                                                           // Initialize the DHT11
-  void update(bool showOnLCD = false);                                                    // Read and optionally display humidity
+  HumiditySensor(int humidityPin, LiquidCrystal_I2C& display, WiFiManager& wifiManager);
 
-  void sendHumidityToServer(int humidity) {
-  String body = "humiditySensor=" + String(humidity);
-  wifiManager.sendHTTPPost(serverURL, body);
-}
-
+  void begin();
+  void update(bool showOnLCD = false);
+  void sendHumidityToServer(int humidity);
+  void forcePowerOffUpdate();  // Add this to support OFF updates
 };
 
 #endif
