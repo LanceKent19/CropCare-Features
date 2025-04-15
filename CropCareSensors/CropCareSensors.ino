@@ -99,7 +99,7 @@ void setup() {
   tempSensor.begin();
   humiditySensor.begin();
 
-  phSensor.begin();  // ✅ CALL forcePowerOffUpdate() *inside* this method
+  phSensor.begin();  // CALL forcePowerOffUpdate() *inside* this method
   humiditySensor.forcePowerOffUpdate();
   tempSensor.forcePowerOffUpdate();
   soilSensor.forcePowerOffUpdate();
