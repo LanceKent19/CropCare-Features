@@ -66,8 +66,8 @@ void SoilMoistureSensor::update(bool isActive) {
   Serial.print(moisture);
   Serial.println(" %");
 
-  Serial.print("Condition: ");
-  Serial.println(condition);
+  // Serial.print("Condition: ");
+  // Serial.println(condition);
 
   lcd.setCursor(0, 1);
   lcd.print("MP:");

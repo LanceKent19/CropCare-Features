@@ -36,7 +36,7 @@ public:
         http.begin(serverURL);
         http.addHeader("Content-Type", "application/x-www-form-urlencoded");
         
-        Serial.println("Sending POST: " + body);
+        // Serial.println("Sending POST: " + body);
         int code = http.POST(body);
         String response = http.getString();
         

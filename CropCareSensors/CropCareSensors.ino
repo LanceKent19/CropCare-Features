@@ -100,6 +100,7 @@ void loop() {
           ledState = LOW;
           soilSensor.powerOff();
           lcdDisplay.showPowerStatus(false);
+          phSensor.powerOff();
           beepSound.beepBuzzer(150,2);
           digitalWrite(POWER_LED_OFF_PIN, HIGH);
           digitalWrite(PH_RED_LED_PIN, LOW);
@@ -110,12 +111,13 @@ void loop() {
           ledState = HIGH;
           soilSensor.powerOn();
           lcdDisplay.showPowerStatus(true);
+          phSensor.powerOn();
           beepSound.beepBuzzer(150,1);
           digitalWrite(POWER_LED_OFF_PIN, LOW);
         }
         digitalWrite(POWER_LED_ON_PIN, ledState);
       }
-    }
+    }   
   }
 
   if (millis() - lastSensorUpdateTime >= sensorUpdateInterval) {
