@@ -1,48 +1,34 @@
 #include "PhSensor.h"
 
-PhSensor::PhSensor(int pin, float caliVal, int redLed, int greenLed, int blueLed, int buzzer, LiquidCrystal_I2C& lcd, WiFiManager& wifiManager)
-  : pin(pin), caliVal(caliVal), redLed(redLed), greenLed(greenLed), blueLed(blueLed), buzzer(buzzer), lcd(lcd), wifiManager(wifiManager) {
+PhSensor::PhSensor(int pin, float caliVal, int redLed, int greenLed, int blueLed, int buzzer,
+                   LiquidCrystal_I2C& lcd, WiFiManager& wifiManager, PowerManager& powerManager)
+  : pin(pin), caliVal(caliVal), redLed(redLed), greenLed(greenLed), blueLed(blueLed),
+    buzzer(buzzer), lcd(lcd), wifiManager(wifiManager), powerManager(powerManager) {
   // Initialize pins
   pinMode(redLed, OUTPUT);
   pinMode(greenLed, OUTPUT);
   pinMode(blueLed, OUTPUT);
   pinMode(buzzer, OUTPUT);
-}
 
-void PhSensor::powerOff() {
-  isPoweredOn = false;
-  // Turn off all indicators
-  digitalWrite(redLed, LOW);
-  digitalWrite(greenLed, LOW);
-  digitalWrite(blueLed, LOW);
-  digitalWrite(buzzer, LOW);
-
-  // Send "off" state to server
-  updateServer();
-  // Immediately send "off" state to server
-  lastPhValue = NAN;  // Force off state
-  updateServer();
-
-  // Add delay to ensure message is sent
-  delay(100);
-}
-
-void PhSensor::powerOn() {
-  isPoweredOn = true;
-  // Indicators will update during next read
+  // Force initial state
+    if (!powerManager.isSystemOn()) {
+        forcePowerOffUpdate();
+    }
 }
 
 float PhSensor::readPh() {
-  lastPhValue = readRawPh();  // Store the value regardless of power state
-  updateServer();             // Always update server with current state
+  if (!powerManager.isSystemOn()) {
+    lastPhValue = NAN;
+    updateServer();
+    return NAN;
+  }
+
+  lastPhValue = readRawPh();
+  updateServer();
   return lastPhValue;
 }
 
 float PhSensor::readRawPh() {
-  if (!isPoweredOn) {
-    return NAN;
-  }
-
   int buffer_arr[10];
   for (int i = 0; i < 10; i++) {
     buffer_arr[i] = analogRead(pin);
@@ -74,7 +60,14 @@ float PhSensor::readRawPh() {
 }
 
 void PhSensor::updateIndicators(float phValue) {
-  if (!isPoweredOn) return;
+  if (!powerManager.isSystemOn()) {
+    // Turn off all indicators when system is off
+    digitalWrite(redLed, LOW);
+    digitalWrite(greenLed, LOW);
+    digitalWrite(blueLed, LOW);
+    digitalWrite(buzzer, LOW);
+    return;
+  }
 
   if (phValue <= 6.5) {
     digitalWrite(redLed, HIGH);
@@ -95,9 +88,9 @@ void PhSensor::updateIndicators(float phValue) {
 }
 
 void PhSensor::updateDisplay(float phValue) {
-  if (!isPoweredOn) {
-    lcd.setCursor(0, 0);
-    lcd.print("PH: -- OFF --");
+  if (!powerManager.isSystemOn()) {
+    // lcd.setCursor(0, 0);
+    // lcd.print("PH: -- OFF --");
     return;
   }
 
@@ -112,8 +105,14 @@ void PhSensor::updateDisplay(float phValue) {
 }
 
 void PhSensor::updateServer() {
+  // Add immediate return if WiFi isn't connected
+  if (WiFi.status() != WL_CONNECTED) {
+    Serial.println("WiFi not connected - can't update server");
+    return;
+  }
+
   String body;
-  if (!isPoweredOn) {
+  if (!powerManager.isSystemOn()) {
     body = "phSensor=-&powerState=off";
   } else if (isnan(lastPhValue)) {
     body = "phSensor=err&powerState=on";
@@ -121,11 +120,24 @@ void PhSensor::updateServer() {
     body = "phSensor=" + String(lastPhValue, 2) + "&powerState=on";
   }
 
-  wifiManager.sendHTTPPost(serverURL, body);
-  Serial.print("Sending " + body);
-}
+  // Add timestamp to debug power state changes
+  // Serial.print(millis());
+  // Serial.print(" - ");
+  // Serial.println("Sending: " + body);
 
+  HTTPClient http;
+  http.begin(serverURL);
+  http.addHeader("Content-Type", "application/x-www-form-urlencoded");
+  int httpCode = http.POST(body);
+
+  if (httpCode > 0) {
+    Serial.printf("HTTP Code: %d\n", httpCode);
+  } else {
+    Serial.printf("HTTP Error: %s\n", http.errorToString(httpCode).c_str());
+  }
+  http.end();
+}
 void PhSensor::sendPhToServer(float phValue) {
-  lastPhValue = phValue;  // Store the value
-  updateServer();         // Update server with current state
+  lastPhValue = phValue;
+  updateServer();
 }
