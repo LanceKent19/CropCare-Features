@@ -26,11 +26,8 @@ public:
   void powerOn();
   void powerOff();
   void beepPowerBuzzer(int duration = 150, int count = 1);
-
-  void sendMoistToServer(int moisture) {
-    String body = "moistureSensor=" + String(moisture);
-    wifiManager.sendHTTPPost(serverURL, body);
-  }
+  void forcePowerOffUpdate(); 
+  void sendMoistToServer(int moisture);
 };
 
 #endif

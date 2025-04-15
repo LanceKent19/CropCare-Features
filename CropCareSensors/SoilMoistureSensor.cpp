@@ -25,6 +25,16 @@ void SoilMoistureSensor::powerOff() {
   dryTimerStarted = false;
 }
 
+void SoilMoistureSensor::sendMoistToServer(int moisture) {
+  String body = "moistureSensor=" + String(moisture) + "&powerState=on";
+  wifiManager.sendHTTPPost(serverURL, body);
+}
+
+void SoilMoistureSensor::forcePowerOffUpdate() {
+  String body = "moistureSensor=-&powerState=off";
+  wifiManager.sendHTTPPost(serverURL, body);
+}
+
 void SoilMoistureSensor::update(bool isActive) {
   if (!isActive) {
     powerOff();
