@@ -13,7 +13,7 @@
 // TEMPERATURE SENSOR PIN
 #define TEMPERATURE_PIN 23
 
-// PH LEVEL SENSOR PINS
+// PH LEVEL SENSOR PINS;-
 #define PH_LEVEL_PIN 36
 #define PH_RED_LED_PIN 18
 #define PH_GREEN_LED_PIN 5
@@ -84,6 +84,7 @@ void setup() {
   pinMode(PH_BLUE_LED_PIN, OUTPUT);
   pinMode(PH_BUZZER_PIN, OUTPUT);
 
+  digitalWrite(POWER_LED_OFF_PIN, HIGH);
   // 6. Turn off all sensor indicators
   digitalWrite(LED_SOIL_PIN, LOW);
   digitalWrite(SOIL_BUZZER_PIN, LOW);
@@ -129,7 +130,6 @@ void loop() {
           digitalWrite(PH_BLUE_LED_PIN, LOW);
           // Force all sensors to update their off state
           phSensor.forcePowerOffUpdate();
-          // ... other sensors
         } else {
           Serial.println("Sensor On");
           ledState = HIGH;

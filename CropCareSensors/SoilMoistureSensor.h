@@ -16,7 +16,7 @@ private:
   const unsigned long dryDelay = 3000;
   bool ledState;
   WiFiManager &wifiManager;
-  const char *serverURL = "http://192.168.100.42:3000/update_moisture.php";
+  const char *serverURL = "http://192.168.100.42/Plant-disease-detection/update_moisture.php";
 
 public:
   SoilMoistureSensor(int pin, int dryVal, int wetVal, int ledPin, int buzzerPin, LiquidCrystal_I2C &lcd, WiFiManager &wifiManager);
