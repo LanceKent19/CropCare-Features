@@ -1,33 +1,27 @@
 // SYSTEM BUTTONS AND INCLUDE
-// BUTTON ON AND OFF PINS
 #define POWER_LED_ON_PIN 14
 #define POWER_BUTTON_PIN 4
 #define POWER_LED_OFF_PIN 26
 #define POWER_BUZZER_PIN 13
 
-// SOIL MOISTURE SENSOR PINS
 #define LED_SOIL_PIN 25
 #define SOIL_BUZZER_PIN 12
 #define SOIL_PIN 34
 
-// TEMPERATURE SENSOR PIN
 #define TEMPERATURE_PIN 23
-
-// PH LEVEL SENSOR PINS;-
 #define PH_LEVEL_PIN 36
 #define PH_RED_LED_PIN 18
 #define PH_GREEN_LED_PIN 5
 #define PH_BLUE_LED_PIN 17
 #define PH_BUZZER_PIN 16
 
-// LCD PINS
 #define SCL_PINS 22
 #define SDA 21
 
-// HUMIDITY PINS
 #define HUMIDITY_PIN 19
 
-// Classess and Libraries
+#define BATTERY_TOGGLE_PIN 33
+
 #include "TemperatureSensor.h"
 #include "SoilMoistureSensor.h"
 #include "PhSensor.h"
@@ -37,55 +31,59 @@
 #include "WifiManager.h"
 #include "PowerManager.h"
 
-// variables will change:
-int lastButtonState;
-int buttonState;
-int ledState = LOW;
-bool lcdIsOn = false;
-
-unsigned long lastTimeButtonChangedState = millis();
-unsigned long lastSensorUpdateTime = 0;
-unsigned long debounceDuration = 50;
-unsigned long sensorUpdateInterval = 500;  // 500ms like your original delay
-
-// DEFINING OBJECTS
+// Classes
 WiFiManager wifiManager("THE MAGOLLADOS'S", "DEMO POWER");
 BeepSound beepSound(POWER_BUZZER_PIN);
 LCDDisplay lcdDisplay;
 PowerManager powerManager(lcdDisplay.getLCD());
-TemperatureSensor tempSensor(TEMPERATURE_PIN, lcdDisplay.getLCD(), wifiManager);                                                                           // Creates and object of the class TemperatureSensor and passed the 23 GPIO pin
-SoilMoistureSensor soilSensor(SOIL_PIN, 3500, 1000, LED_SOIL_PIN, SOIL_BUZZER_PIN, lcdDisplay.getLCD(), wifiManager);                                      // Creates and object of the class SoilMoistureSensor and passed the 34 GPIO pin with dry and wet value
-PhSensor phSensor(PH_LEVEL_PIN, 21.40, PH_RED_LED_PIN, PH_GREEN_LED_PIN, PH_BLUE_LED_PIN, PH_BUZZER_PIN, lcdDisplay.getLCD(), wifiManager, powerManager);  // Creates and object of the class PhSensor and passed the 35 GPIO pin
+TemperatureSensor tempSensor(TEMPERATURE_PIN, lcdDisplay.getLCD(), wifiManager);
+SoilMoistureSensor soilSensor(SOIL_PIN, 3500, 1000, LED_SOIL_PIN, SOIL_BUZZER_PIN, lcdDisplay.getLCD(), wifiManager);
+PhSensor phSensor(PH_LEVEL_PIN, 21.40, PH_RED_LED_PIN, PH_GREEN_LED_PIN, PH_BLUE_LED_PIN, PH_BUZZER_PIN, lcdDisplay.getLCD(), wifiManager, powerManager);
 HumiditySensor humiditySensor(HUMIDITY_PIN, lcdDisplay.getLCD(), wifiManager);
 
+// --- BUTTON VARIABLES (your original logic)
+const int buttonPin = POWER_BUTTON_PIN;
+int buttonStatePrevious = LOW;
+bool buttonStateLongPress = false;
+unsigned long minButtonLongPressDuration = 3000;
+unsigned long buttonLongPressMillis;
+unsigned long buttonPressDuration;
+unsigned long previousButtonMillis;
+unsigned long currentMillis;
+const int intervalButton = 50;
+bool isOn = false;
+
+// --- SENSORS
+unsigned long lastSensorUpdateTime = 0;
+unsigned long sensorUpdateInterval = 500;
+unsigned long lastHumidityReadTime = 0;
+const unsigned long humidityInterval = 3000;
+
+// --- Button variables for Battery Toggle Button (BATTERY_TOGGLE_PIN)
+const int batteryButtonPin = BATTERY_TOGGLE_PIN;
+int batteryButtonStatePrevious = HIGH;  // With INPUT_PULLUP, default is HIGH
+unsigned long batteryPreviousMillis = 0;
+const int batteryDebounceDelay = 50;
+bool batteryMode = false;  // false = show sensors, true = show battery percentage
+
 void setup() {
-  Serial.begin(115200);  // Typo in your original: 115200 is correct
-  // 1. Initialize basic hardware first
+  Serial.begin(115200);
+  pinMode(buttonPin, INPUT_PULLUP);
+  pinMode(batteryButtonPin, INPUT_PULLUP);
+
   pinMode(POWER_LED_ON_PIN, OUTPUT);
   pinMode(POWER_LED_OFF_PIN, OUTPUT);
-  pinMode(POWER_BUTTON_PIN, INPUT_PULLUP);
-
-  // 2. Set initial LED states (OFF state)
-  digitalWrite(POWER_LED_ON_PIN, LOW);    // Green OFF
-  digitalWrite(POWER_LED_OFF_PIN, HIGH);  // Red ON
-
-  // 3. Initialize LCD display
-  lcdDisplay.begin();
-
-  // 4. Initialize PowerManager (must be after LCD)
-  powerManager.begin();  // This should show "SYSTEM OFF" on LCD
-
-  // 5. Initialize other hardware pins
+  pinMode(POWER_BUZZER_PIN, OUTPUT);
   pinMode(LED_SOIL_PIN, OUTPUT);
   pinMode(SOIL_BUZZER_PIN, OUTPUT);
-  pinMode(POWER_BUZZER_PIN, OUTPUT);
   pinMode(PH_RED_LED_PIN, OUTPUT);
   pinMode(PH_GREEN_LED_PIN, OUTPUT);
   pinMode(PH_BLUE_LED_PIN, OUTPUT);
   pinMode(PH_BUZZER_PIN, OUTPUT);
 
+  digitalWrite(POWER_LED_ON_PIN, LOW);
   digitalWrite(POWER_LED_OFF_PIN, HIGH);
-  // 6. Turn off all sensor indicators
+
   digitalWrite(LED_SOIL_PIN, LOW);
   digitalWrite(SOIL_BUZZER_PIN, LOW);
   digitalWrite(PH_RED_LED_PIN, LOW);
@@ -93,67 +91,160 @@ void setup() {
   digitalWrite(PH_BLUE_LED_PIN, LOW);
   digitalWrite(PH_BUZZER_PIN, LOW);
 
-  // 7. Connect to WiFi (important before sensors)
-  wifiManager.connect();
+  lcdDisplay.begin();
+  powerManager.begin();
+  lcdDisplay.getLCDPointer()->backlight();  // Ensure backlight is on
+  wifiManager.setLCD(lcdDisplay.getLCDPointer());
+  wifiManager.connect(6000);
 
-  // 8. Initialize sensors (AFTER WiFi is connected)
   tempSensor.begin();
   humiditySensor.begin();
 
-  phSensor.begin();  // CALL forcePowerOffUpdate() *inside* this method
   humiditySensor.forcePowerOffUpdate();
   tempSensor.forcePowerOffUpdate();
   soilSensor.forcePowerOffUpdate();
-  // 9. Initialize button state
-  lastButtonState = digitalRead(POWER_BUTTON_PIN);
+  // Initialize button states
+  buttonStatePrevious = digitalRead(buttonPin);
+  batteryButtonStatePrevious = digitalRead(batteryButtonPin);
 }
 
-void loop() {
-  if (millis() - lastTimeButtonChangedState >= debounceDuration) {
-    buttonState = digitalRead(POWER_BUTTON_PIN);
-    if (buttonState != lastButtonState) {
-      lastTimeButtonChangedState = millis();
-      lastButtonState = buttonState;
+void readPowerButtonState() {
+  currentMillis = millis();
 
-      if (buttonState == LOW) {
-        if (ledState == HIGH) {
-          Serial.println("Sensor Off");
-          ledState = LOW;
+  if (currentMillis - previousButtonMillis > intervalButton) {
+    int buttonState = digitalRead(buttonPin);
+
+    // Press start
+    if (buttonState == HIGH && buttonStatePrevious == LOW && !buttonStateLongPress) {
+      buttonLongPressMillis = currentMillis;
+      buttonStatePrevious = HIGH;
+    }
+
+    // Holding check
+    buttonPressDuration = currentMillis - buttonLongPressMillis;
+    if (buttonState == HIGH && !buttonStateLongPress && buttonPressDuration >= minButtonLongPressDuration) {
+      buttonStateLongPress = true;
+      lcdDisplay.getLCDPointer()->clear();
+      lcdDisplay.getLCDPointer()->setCursor(3, 0);  // Centered
+      lcdDisplay.getLCDPointer()->print("System");
+      lcdDisplay.getLCDPointer()->setCursor(2, 1);
+      lcdDisplay.getLCDPointer()->print("Restarting...");
+      lcdDisplay.getLCDPointer()->backlight();
+
+      beepSound.beepBuzzer(100, 3);
+      delay(500);
+      ESP.restart();
+    }
+
+    // Release check
+    if (buttonState == LOW && buttonStatePrevious == HIGH) {
+      buttonStatePrevious = LOW;
+
+      if (buttonPressDuration < minButtonLongPressDuration) {
+        isOn = !isOn;
+
+        if (isOn) {
+          Serial.println("Sensor ON");
+          soilSensor.powerOn();
+          lcdDisplay.showPowerStatus(true);
+          powerManager.powerOnSystem();
+          // No need to display "Connecting..." here anymore
+          lcdDisplay.printTemporaryMessage(
+            wifiManager.isConnected() ? "WiFi: Connected" : "WiFi: Offline",
+            1500);
+          digitalWrite(POWER_LED_ON_PIN, HIGH);
+          digitalWrite(POWER_LED_OFF_PIN, LOW);
+          beepSound.beepBuzzer(150, 1);
+          // Force immediate sensor display update after turning ON
+          soilSensor.update(true);
+          tempSensor.lcdTemperatureSensor();
+          humiditySensor.update(true);
+          lastSensorUpdateTime = millis();
+          lastHumidityReadTime = millis();
+        } else {
+          Serial.println("Sensor OFF");
           soilSensor.powerOff();
           lcdDisplay.showPowerStatus(false);
-
           powerManager.powerOffSystem();
-          beepSound.beepBuzzer(150, 2);
+          digitalWrite(POWER_LED_ON_PIN, LOW);
           digitalWrite(POWER_LED_OFF_PIN, HIGH);
           digitalWrite(PH_RED_LED_PIN, LOW);
           digitalWrite(PH_GREEN_LED_PIN, LOW);
           digitalWrite(PH_BLUE_LED_PIN, LOW);
-          // Force all sensors to update their off state
-          phSensor.forcePowerOffUpdate();
-        } else {
-          Serial.println("Sensor On");
-          ledState = HIGH;
-          soilSensor.powerOn();
-          lcdDisplay.showPowerStatus(true);
-
-          powerManager.powerOnSystem();
-
-          beepSound.beepBuzzer(150, 1);
-          digitalWrite(POWER_LED_OFF_PIN, LOW);
+          digitalWrite(PH_BUZZER_PIN, LOW);
+          digitalWrite(LED_SOIL_PIN, LOW);
+          digitalWrite(SOIL_BUZZER_PIN, LOW);
+          humiditySensor.forcePowerOffUpdate();
+          tempSensor.forcePowerOffUpdate();
+          soilSensor.forcePowerOffUpdate();
+          beepSound.beepBuzzer(150, 2);
         }
-        digitalWrite(POWER_LED_ON_PIN, ledState);
-         delay(300); // Debounce delay
+      }
+
+      buttonStateLongPress = false;
+    }
+
+    previousButtonMillis = currentMillis;
+  }
+}
+
+// --- Function to handle battery display toggle
+void readBatteryToggleButton() {
+  if (!isOn) return; // Prevent toggle if system is off
+  unsigned long now = millis();
+  // Debounce battery button
+  if (now - batteryPreviousMillis > batteryDebounceDelay) {
+    int batteryState = digitalRead(batteryButtonPin);
+
+    // When button is pressed (assuming active LOW)
+    if (batteryState == LOW && batteryButtonStatePrevious == HIGH) {
+      batteryButtonStatePrevious = LOW;
+      batteryMode = !batteryMode;  // Toggle display mode
+
+      lcdDisplay.getLCDPointer()->clear();
+      if (batteryMode) {
+        Serial.println("Battery Mode");
+        // Display battery percentage. Replace "85%" with your measured value.
+        lcdDisplay.printTemporaryMessage("Battery Active", 1500);
+        beepSound.beepBuzzer(150, 3);
+        lcdDisplay.getLCDPointer()->setCursor(0, 0);
+        lcdDisplay.getLCDPointer()->print("Stats:No Charger");
+        lcdDisplay.getLCDPointer()->setCursor(0, 1);
+        lcdDisplay.getLCDPointer()->print("Battery: 85%");
+      } else {
+        Serial.println("Sensor Mode");
+          beepSound.beepBuzzer(150, 3);
+        // Switch back to sensor display. You might call a function that refreshes sensor values.
+        lcdDisplay.printTemporaryMessage("Sensors Active", 1500);
       }
     }
+
+    if (batteryState == HIGH && batteryButtonStatePrevious == LOW) {
+      batteryButtonStatePrevious = HIGH;
+    }
+
+    batteryPreviousMillis = now;
+  }
+}
+
+void loop() {
+  currentMillis = millis();
+
+  // Check power button (and restart) logic
+  readPowerButtonState();
+
+  // Check battery display toggle button only if system is ON
+  if (isOn) {
+    readBatteryToggleButton();
   }
 
-  if (millis() - lastSensorUpdateTime >= sensorUpdateInterval) {
+  // Only update sensors if the system is ON and batteryMode is off.
+  if (isOn && !batteryMode && (millis() - lastSensorUpdateTime >= sensorUpdateInterval)) {
     lastSensorUpdateTime = millis();
-
-    if (ledState == HIGH) {
-      soilSensor.update(true);
-      tempSensor.lcdTemperatureSensor();
-      phSensor.readPh();
+    soilSensor.update(true);
+    tempSensor.lcdTemperatureSensor();
+    if (millis() - lastHumidityReadTime >= humidityInterval) {
+      lastHumidityReadTime = millis();
       humiditySensor.update(true);
     }
   }

@@ -4,140 +4,123 @@ PhSensor::PhSensor(int pin, float caliVal, int redLed, int greenLed, int blueLed
                    LiquidCrystal_I2C& lcd, WiFiManager& wifiManager, PowerManager& powerManager)
   : pin(pin), caliVal(caliVal), redLed(redLed), greenLed(greenLed), blueLed(blueLed),
     buzzer(buzzer), lcd(lcd), wifiManager(wifiManager), powerManager(powerManager) {
-  // Initialize pins
+
   pinMode(redLed, OUTPUT);
   pinMode(greenLed, OUTPUT);
   pinMode(blueLed, OUTPUT);
   pinMode(buzzer, OUTPUT);
 
-  // Force initial state
-    if (!powerManager.isSystemOn()) {
-        forcePowerOffUpdate();
-    }
+  if (!powerManager.isSystemOn()) {
+    forcePowerOffUpdate();
+  }
 }
 
-float PhSensor::readPh() {
+void PhSensor::begin() {
+  if (!powerManager.isSystemOn() && WiFi.status() == WL_CONNECTED) {
+    forcePowerOffUpdate();
+  }
+}
+
+void PhSensor::readPhNonBlocking() {
   if (!powerManager.isSystemOn()) {
     lastPhValue = NAN;
-    updateServer();
-    return NAN;
+    forcePowerOffUpdate();
+    return;
   }
 
-  lastPhValue = readRawPh();
-  updateServer();
-  return lastPhValue;
-}
+  if (!isSampling) {
+    sampleIndex = 0;
+    isSampling = true;
+    lastReadTime = millis();
 
-float PhSensor::readRawPh() {
-  int buffer_arr[10];
-  for (int i = 0; i < 10; i++) {
-    buffer_arr[i] = analogRead(pin);
-    delay(30);
+    lcd.setCursor(0, 0);
+    lcd.print("PH:...");
+    lcd.print("   ");
+    lcd.setCursor(4, 0);
+    Serial.println("Start reading pH...");
   }
 
-  // Sort and average (median of middle 6 values)
-  for (int i = 0; i < 9; i++) {
-    for (int j = i + 1; j < 10; j++) {
-      if (buffer_arr[i] > buffer_arr[j]) {
-        int temp = buffer_arr[i];
-        buffer_arr[i] = buffer_arr[j];
-        buffer_arr[j] = temp;
+  if (isSampling && millis() - lastReadTime >= readInterval) {
+    lastReadTime = millis();
+    buffer_arr[sampleIndex++] = analogRead(pin);
+
+    if (sampleIndex >= 10) {
+      isSampling = false;
+      unsigned long processingStart = millis();
+
+      // Sort and median average
+      for (int i = 0; i < 9; i++) {
+        for (int j = i + 1; j < 10; j++) {
+          if (buffer_arr[i] > buffer_arr[j]) {
+            int temp = buffer_arr[i];
+            buffer_arr[i] = buffer_arr[j];
+            buffer_arr[j] = temp;
+          }
+        }
       }
+
+      int avgval = 0;
+      for (int i = 2; i < 8; i++) avgval += buffer_arr[i];
+      avgval /= 6;
+
+      float voltage = (float)avgval * 2.5 / 4095.0;
+      float ph_act = -5.70 * voltage + caliVal;
+      lastPhValue = ph_act;
+
+      Serial.print("Finished analog reads in: ");
+      Serial.println(millis() - processingStart);
+
+      lcd.setCursor(0, 0);
+      lcd.print("PH:");
+      lcd.print(ph_act, 1);
+      lcd.print("   ");
+      lcd.setCursor(8, 0);
+
+      // Indicators without delay
+      buzzerStartTime = 0;
+      buzzerActive = false;
+
+      if (ph_act <= 6.5) {
+        digitalWrite(redLed, HIGH);
+        digitalWrite(greenLed, LOW);
+        digitalWrite(blueLed, LOW);
+        digitalWrite(buzzer, HIGH);
+        buzzerStartTime = millis();
+        buzzerActive = true;
+      } else if (ph_act <= 7.5) {
+        digitalWrite(redLed, LOW);
+        digitalWrite(greenLed, HIGH);
+        digitalWrite(blueLed, LOW);
+        digitalWrite(buzzer, LOW);
+      } else {
+        digitalWrite(redLed, LOW);
+        digitalWrite(greenLed, LOW);
+        digitalWrite(blueLed, HIGH);
+        digitalWrite(buzzer, HIGH);
+        buzzerStartTime = millis();
+        buzzerActive = true;
+      }
+
+      processingStart = millis();
+      sendPhToServer(ph_act);
+      Serial.print("Sent to server in: ");
+      Serial.println(millis() - processingStart);
     }
   }
 
-  int avgval = 0;
-  for (int i = 2; i < 8; i++) avgval += buffer_arr[i];
-  avgval /= 6;
-
-  float voltage = (float)avgval * 3.3 / 4095.0;
-  float ph_act = -5.70 * voltage + caliVal;
-
-  updateIndicators(ph_act);
-  updateDisplay(ph_act);
-
-  return ph_act;
-}
-
-void PhSensor::updateIndicators(float phValue) {
-  if (!powerManager.isSystemOn()) {
-    // Turn off all indicators when system is off
-    digitalWrite(redLed, LOW);
-    digitalWrite(greenLed, LOW);
-    digitalWrite(blueLed, LOW);
+  // Handle buzzer timing
+  if (buzzerActive && millis() - buzzerStartTime >= 200) {
     digitalWrite(buzzer, LOW);
-    return;
-  }
-
-  if (phValue <= 6.5) {
-    digitalWrite(redLed, HIGH);
-    digitalWrite(greenLed, LOW);
-    digitalWrite(blueLed, LOW);
-    digitalWrite(buzzer, HIGH);
-  } else if (phValue <= 7.5) {
-    digitalWrite(redLed, LOW);
-    digitalWrite(greenLed, HIGH);
-    digitalWrite(blueLed, LOW);
-    digitalWrite(buzzer, LOW);
-  } else if (phValue > 7.5) {
-    digitalWrite(redLed, LOW);
-    digitalWrite(greenLed, LOW);
-    digitalWrite(blueLed, HIGH);
-    digitalWrite(buzzer, HIGH);
+    buzzerActive = false;
   }
 }
 
-void PhSensor::updateDisplay(float phValue) {
-  if (!powerManager.isSystemOn()) {
-    // lcd.setCursor(0, 0);
-    // lcd.print("PH: -- OFF --");
-    return;
-  }
-
-  lcd.setCursor(0, 0);
-  lcd.print("PH:");
-  lcd.setCursor(3, 0);
-  if (isnan(phValue)) {
-    lcd.print("-- ERR --");
-  } else {
-    lcd.print(phValue, 2);
-  }
-}
-
-void PhSensor::updateServer() {
-  // Add immediate return if WiFi isn't connected
-  if (WiFi.status() != WL_CONNECTED) {
-    Serial.println("WiFi not connected - can't update server");
-    return;
-  }
-
-  String body;
-  if (!powerManager.isSystemOn()) {
-    body = "phSensor=-&powerState=off";
-  } else if (isnan(lastPhValue)) {
-    body = "phSensor=err&powerState=on";
-  } else {
-    body = "phSensor=" + String(lastPhValue, 2) + "&powerState=on";
-  }
-
-  // Add timestamp to debug power state changes
-  // Serial.print(millis());
-  // Serial.print(" - ");
-  // Serial.println("Sending: " + body);
-
-  HTTPClient http;
-  http.begin(serverURL);
-  http.addHeader("Content-Type", "application/x-www-form-urlencoded");
-  int httpCode = http.POST(body);
-
-  if (httpCode > 0) {
-    Serial.printf("HTTP Code: %d\n", httpCode);
-  } else {
-    Serial.printf("HTTP Error: %s\n", http.errorToString(httpCode).c_str());
-  }
-  http.end();
-}
 void PhSensor::sendPhToServer(float phValue) {
-  lastPhValue = phValue;
-  updateServer();
+  String body = "phSensor=" + String(phValue, 2) + "&powerState=on";
+  wifiManager.sendHTTPPost(serverURL, body);
+}
+
+void PhSensor::forcePowerOffUpdate() {
+  String body = "phSensor=-&powerState=off";
+  wifiManager.sendHTTPPost(serverURL, body);
 }

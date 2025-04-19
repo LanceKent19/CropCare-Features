@@ -5,7 +5,7 @@
 
 class LCDDisplay {
 private:
-  LiquidCrystal_I2C lcd;
+   LiquidCrystal_I2C lcd = LiquidCrystal_I2C(0x27, 16, 2);
   bool isSystemOn = false;
   
 public:
@@ -20,9 +20,10 @@ public:
     lcd.print("Setup...");
     delay(2000);
     lcd.clear();
-    lcd.noBacklight();
   }
-  
+    LiquidCrystal_I2C* getLCDPointer() {
+    return &lcd;
+}
   void showPowerStatus(bool isOn) {
     isSystemOn = isOn;
     lcd.clear();
@@ -44,7 +45,13 @@ public:
     delay(1000);
     lcd.clear();
   }
-  
+  void printTemporaryMessage(String message, unsigned long durationMs = 1500) {
+    lcd.clear();
+    lcd.setCursor((16 - message.length()) / 2, 0);
+    lcd.print(message);
+    delay(durationMs);
+    lcd.clear();
+} 
   void displaySensorData(float ph, float temp, float moisture, float humidity) {
     if (!isSystemOn) return;
     
@@ -69,6 +76,11 @@ public:
     lcd.print(humidity, 0);
     lcd.print("%");
   }
+void printCenter(String message) {
+    lcd.clear();
+    lcd.setCursor((16 - message.length()) / 2, 0); // center horizontally
+    lcd.print(message);
+}
 
   void showNoData() {
     if (!isSystemOn) return;
@@ -87,5 +99,6 @@ public:
   bool isOn() const {
     return isSystemOn;
   }
+
 };
 #endif
