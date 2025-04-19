@@ -32,8 +32,8 @@
 #include "PowerManager.h"
 
 // Classes
-WiFiManager wifiManager("THE MAGOLLADOS'S", "DEMO POWER");
 BeepSound beepSound(POWER_BUZZER_PIN);
+WiFiManager wifiManager("THE MAGOLLADOS'S", "DEMO POWER");
 LCDDisplay lcdDisplay;
 PowerManager powerManager(lcdDisplay.getLCD());
 TemperatureSensor tempSensor(TEMPERATURE_PIN, lcdDisplay.getLCD(), wifiManager);
@@ -95,6 +95,7 @@ void setup() {
   powerManager.begin();
   lcdDisplay.getLCDPointer()->backlight();  // Ensure backlight is on
   wifiManager.setLCD(lcdDisplay.getLCDPointer());
+  wifiManager.setBeepSound(&beepSound);
   wifiManager.connect(6000);
 
   tempSensor.begin();
@@ -168,6 +169,7 @@ void readPowerButtonState() {
           powerManager.powerOffSystem();
           digitalWrite(POWER_LED_ON_PIN, LOW);
           digitalWrite(POWER_LED_OFF_PIN, HIGH);
+          beepSound.beepBuzzer(150, 3);
           digitalWrite(PH_RED_LED_PIN, LOW);
           digitalWrite(PH_GREEN_LED_PIN, LOW);
           digitalWrite(PH_BLUE_LED_PIN, LOW);
@@ -177,7 +179,7 @@ void readPowerButtonState() {
           humiditySensor.forcePowerOffUpdate();
           tempSensor.forcePowerOffUpdate();
           soilSensor.forcePowerOffUpdate();
-          beepSound.beepBuzzer(150, 2);
+          batteryMode = false;
         }
       }
 
