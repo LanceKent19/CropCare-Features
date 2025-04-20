@@ -20,7 +20,8 @@ public:                                                // public objects so that
   void begin();                                        // Initialize the temperature sensor
   float getCelsius();                                  // Getter for returning the value celcius
   float getFahrenheit();                               // Getter for returning the value fahrenheit
-  void lcdTemperatureSensor();
+  void requestTemperature();
+  void lcdTemperatureSensor(bool showOnLCD);
   void sendTemperatureToServer(float temperature);
   void forcePowerOffUpdate();  // Add this to support OFF updates
 };

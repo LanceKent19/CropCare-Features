@@ -14,13 +14,12 @@ void HumiditySensor::update(bool showOnLCD) {
     Serial.print(humidity);
     Serial.println(" %");
 
-    if (showOnLCD) {
-      lcd->setCursor(8, 1);
-      lcd->print("Hum:");
-      lcd->setCursor(12, 1);
-      lcd->print(humidity);
-      lcd->print(" % ");
-    }
+  if (showOnLCD) {
+    char buffer[16];
+    sprintf(buffer, "Hum:%3d%%", humidity);  // right-aligned in 3 spaces
+    lcd->setCursor(8, 1);
+    lcd->print(buffer);
+  }
 
     sendHumidityToServer(humidity);
   }

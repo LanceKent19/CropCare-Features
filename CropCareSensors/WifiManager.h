@@ -86,7 +86,7 @@ public:
     return WiFi.status() == WL_CONNECTED;
   }
 
-  void sendHTTPPost(const char* serverURL, const String& body) {
+  void sendHTTPPost(const char* serverURL, const String& body) {  
     if (!isConnected()) {
       Serial.println("WiFi not connected");
       return;

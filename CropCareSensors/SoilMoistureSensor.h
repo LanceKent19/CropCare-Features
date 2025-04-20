@@ -21,12 +21,16 @@ private:
 public:
   SoilMoistureSensor(int pin, int dryVal, int wetVal, int ledPin, int buzzerPin, LiquidCrystal_I2C &lcd, WiFiManager &wifiManager);
   int readValue();
+  // Unified interface
+  float readMoisture() {
+    return getMoisturePercent();
+  }  // For consistency
   int getMoisturePercent();
-  void update(bool isActive);
+  void update(bool isActive, bool showOnLCD);
   void powerOn();
   void powerOff();
   void beepPowerBuzzer(int duration = 150, int count = 1);
-  void forcePowerOffUpdate(); 
+  void forcePowerOffUpdate();
   void sendMoistToServer(int moisture);
 };
 

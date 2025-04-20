@@ -35,7 +35,7 @@ void SoilMoistureSensor::forcePowerOffUpdate() {
   wifiManager.sendHTTPPost(serverURL, body);
 }
 
-void SoilMoistureSensor::update(bool isActive) {
+void SoilMoistureSensor::update(bool isActive, bool showOnLCD) {
   if (!isActive) {
     powerOff();
     return;
@@ -79,10 +79,11 @@ void SoilMoistureSensor::update(bool isActive) {
   // Serial.print("Condition: ");
   // Serial.println(condition);
 
-  lcd.setCursor(0, 1);
-  lcd.print("MP:");
-  lcd.print(moisture);
-  lcd.print("%");
-
+  if (showOnLCD) {
+    char buffer[16];
+    sprintf(buffer, "MP:%3d%%", moisture);  // right-aligned in 3 spaces
+    lcd.setCursor(0, 1);
+    lcd.print(buffer);
+  }
   sendMoistToServer(moisture);
 }

@@ -9,10 +9,15 @@ void TemperatureSensor::begin() {
   sensors.begin();  // setup to initialize the temperature sensor
 }
 
-float TemperatureSensor::getCelsius() {
-  sensors.requestTemperatures();      // Ask the sensor for the temperature
-  return sensors.getTempCByIndex(0);  // return the value in celcius
+// float TemperatureSensor::getCelsius() {
+//   sensors.requestTemperatures();      // Ask the sensor for the temperature
+//   return sensors.getTempCByIndex(0);  // return the value in celcius
+// }
+
+void TemperatureSensor::requestTemperature() {
+  sensors.requestTemperatures();  // non-blocking trigger
 }
+
 void TemperatureSensor::sendTemperatureToServer(float temperature) {
   String body = "tempSensor=" + String(temperature) + "&powerState=on";
   wifiManager.sendHTTPPost(serverURL, body);
@@ -22,8 +27,8 @@ void TemperatureSensor::forcePowerOffUpdate() {
   String body = "tempSensor=-&powerState=off";
   wifiManager.sendHTTPPost(serverURL, body);
 }
-void TemperatureSensor::lcdTemperatureSensor() {
-  float tempC = getCelsius();
+void TemperatureSensor::lcdTemperatureSensor(bool showOnLCD) {
+  float tempC = sensors.getTempCByIndex(0);
   // float tempF = (tempC * 9.0 / 5.0) + 32.0;
 
   Serial.print("\nTemperature: ");
@@ -31,11 +36,11 @@ void TemperatureSensor::lcdTemperatureSensor() {
   Serial.println(" °C");
   // Serial.print("Fahrenheit: ");
   // Serial.println(tempF);
-
-  lcd.setCursor(9, 0);
-  lcd.print(tempC, 2);
-  lcd.write(223);  // °
-  lcd.print("C");
-
+  if (showOnLCD) {
+    char buffer[16];
+    sprintf(buffer, "%5.2f%cC", tempC, 223);  // 5 characters wide, 2 decimals, °, and C
+    lcd.setCursor(9, 0);                      // Position it to top row, right side
+    lcd.print(buffer);
+  }
   sendTemperatureToServer(tempC);
 }
