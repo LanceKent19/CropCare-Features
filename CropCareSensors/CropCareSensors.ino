@@ -215,9 +215,9 @@ void readBatteryToggleButton() {
         lcdDisplay.getLCDPointer()->print("Battery: 85%");
       } else {
         Serial.println("Sensor Mode");
-          beepSound.beepBuzzer(150, 3);
         // Switch back to sensor display. You might call a function that refreshes sensor values.
         lcdDisplay.printTemporaryMessage("Sensors Active", 1500);
+        beepSound.beepBuzzer(150, 3);
       }
     }
 
