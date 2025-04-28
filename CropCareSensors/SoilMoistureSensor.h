@@ -7,7 +7,7 @@
 
 class SoilMoistureSensor {
 private:
-  int pin;
+  int pin;  
   int dryValue, wetValue;
   int ledPin, buzzerPin;
   LiquidCrystal_I2C &lcd;
@@ -21,15 +21,8 @@ private:
 public:
   SoilMoistureSensor(int pin, int dryVal, int wetVal, int ledPin, int buzzerPin, LiquidCrystal_I2C &lcd, WiFiManager &wifiManager);
   int readValue();
-  // Unified interface
-  float readMoisture() {
-    return getMoisturePercent();
-  }  // For consistency
   int getMoisturePercent();
-  void update(bool isActive, bool showOnLCD);
-  void powerOn();
-  void powerOff();
-  void beepPowerBuzzer(int duration = 150, int count = 1);
+  void update(bool showOnLCD);
   void forcePowerOffUpdate();
   void sendMoistToServer(int moisture);
 };

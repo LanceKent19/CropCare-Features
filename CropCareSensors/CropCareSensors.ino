@@ -37,7 +37,7 @@ LCDDisplay lcdDisplay;
 PowerManager powerManager(lcdDisplay.getLCD());
 TemperatureSensor tempSensor(TEMPERATURE_PIN, lcdDisplay.getLCD(), wifiManager);
 SoilMoistureSensor soilSensor(SOIL_PIN, 3500, 1000, LED_SOIL_PIN, SOIL_BUZZER_PIN, lcdDisplay.getLCD(), wifiManager);
-PhSensor phSensor(PH_LEVEL_PIN, 21.40, PH_RED_LED_PIN, PH_GREEN_LED_PIN, PH_BLUE_LED_PIN, PH_BUZZER_PIN, lcdDisplay.getLCD(), wifiManager, powerManager);
+PhSensor phSensor(PH_LEVEL_PIN, 21.75, PH_RED_LED_PIN, PH_GREEN_LED_PIN, PH_BLUE_LED_PIN, PH_BUZZER_PIN, lcdDisplay.getLCD(), wifiManager, powerManager);
 HumiditySensor humiditySensor(HUMIDITY_PIN, lcdDisplay.getLCD(), wifiManager);
 
 // --- POWER BUTTON LOGIC
@@ -55,7 +55,7 @@ const int buttonPin = POWER_BUTTON_PIN;
 
 // For timing sensor updates
 unsigned long lastSensorUpdateTime = 0;
-const unsigned long sensorUpdateInterval = 1000; // 1 second (adjust as needed)
+const unsigned long sensorUpdateInterval = 1000;  // 1 second (adjust as needed)
 
 // --- BATTERY TOGGLE BUTTON
 const int batteryButtonPin = BATTERY_TOGGLE_PIN;
@@ -67,8 +67,8 @@ bool batteryButtonHandled = false;
 
 // --- BUTTON INTERRUPTS
 volatile bool powerInterruptTriggered = false;  // Flag to indicate interrupt
-unsigned long lastPowerToggleTime = 0;  // For debounce logic
-const unsigned long debounceDelay = 300;  // 300ms debounce delay
+unsigned long lastPowerToggleTime = 0;          // For debounce logic
+const unsigned long debounceDelay = 300;        // 300ms debounce delay
 
 void IRAM_ATTR handlePowerButtonInterrupt() {
   powerInterruptTriggered = true;  // Flag when the power button is pressed
@@ -88,7 +88,7 @@ void setup() {
   pinMode(buttonPin, INPUT_PULLUP);
   // Enable the interrupt for the power button pin
   attachInterrupt(digitalPinToInterrupt(buttonPin), handlePowerButtonInterrupt, FALLING);
-  pinMode(batteryButtonPin, INPUT_PULLUP);
+  pinMode(batteryButtonPin, INPUT);
   // Configure battery button interrupt
   attachInterrupt(digitalPinToInterrupt(batteryButtonPin), handleBatteryButtonInterrupt, FALLING);  // Trigger on both press and release
   pinMode(POWER_LED_ON_PIN, OUTPUT);
@@ -118,50 +118,43 @@ void setup() {
   wifiManager.setBeepSound(&beepSound);
   wifiManager.connect(6000);
 
-  tempSensor.begin();
+  // tempSensor.begin();
+  // tempSensor.forcePowerOffUpdate();
   humiditySensor.begin();
   humiditySensor.forcePowerOffUpdate();
-  tempSensor.forcePowerOffUpdate();
   soilSensor.forcePowerOffUpdate();
+  phSensor.forcePowerOffUpdate();
   // Initialize button states
   buttonStatePrevious = digitalRead(buttonPin);
   batteryButtonStatePrevious = digitalRead(batteryButtonPin);
 }
 
 void readPowerButtonState() {
-  unsigned long currentMillis = millis();
-
-  // Check if power button interrupt was triggered
   if (powerInterruptTriggered) {
-    powerInterruptTriggered = false;  // Reset the flag
-
-    // Ensure debounce by checking time difference
+    unsigned long currentMillis = millis();
     if (currentMillis - lastPowerToggleTime >= debounceDelay) {
-      Serial.println("Power button pressed.");
-      
-      // Call the function that toggles the power state
+      Serial.println("Power button pressed (interrupt).");
       isOn = !isOn;
       Serial.println(isOn ? "Turn On" : "Turn Off");
-      handlePowerToggle();  // Toggle the system state (turn on/off)
-
-      lastPowerToggleTime = currentMillis;  // Update the last toggle time
+      handlePowerToggle();
+      lastPowerToggleTime = currentMillis;
     }
+    powerInterruptTriggered = false;
+    return;  // Important: stop further processing after interrupt is handled
   }
 
-  // Existing logic for long press detection (button press duration logic)
-  if (currentMillis - previousButtonMillis > intervalButton) {
+  // Existing logic for long press detection
+  if (millis() - previousButtonMillis > intervalButton) {
     int buttonState = digitalRead(buttonPin);
 
-    // Detect button press (rising edge)
+    // Detect button press
     if (buttonState == HIGH && buttonStatePrevious == LOW && !buttonStateLongPress) {
-      buttonLongPressMillis = currentMillis;
+      buttonLongPressMillis = millis();
       buttonStatePrevious = HIGH;
     }
 
-    // Calculate press duration
-    buttonPressDuration = currentMillis - buttonLongPressMillis;
+    buttonPressDuration = millis() - buttonLongPressMillis;
 
-    // Handle long press to restart the system
     if (buttonState == HIGH && !buttonStateLongPress && buttonPressDuration >= minButtonLongPressDuration) {
       buttonStateLongPress = true;
       Serial.println("Restart");
@@ -175,67 +168,54 @@ void readPowerButtonState() {
       ESP.restart();
     }
 
-    // Handle short press to toggle power state
-    if (buttonState == LOW && buttonStatePrevious == HIGH) {
-      buttonStatePrevious = LOW;
-
-      // Toggle power state if it's a short press (not long press)
-      if (buttonPressDuration < minButtonLongPressDuration) {
-        isOn = !isOn;
-        Serial.println(isOn ? "Turn On" : "Turn Off");
-        handlePowerToggle();  // Call the function to toggle power state
-      }
-
-      // Reset long press detection after processing
-      buttonStateLongPress = false;
-    }
-
-    // Update previousButtonMillis to the current time to manage debounce
-    previousButtonMillis = currentMillis;
+    buttonStatePrevious = buttonState;
+    previousButtonMillis = millis();
   }
 }
-  void handlePowerToggle() {
-    // Always reset these on every toggle
-    batteryMode = false;
-    batteryButtonPressed = false;
-    batteryButtonHandled = false;
-    batteryInterruptTriggered = false;
+void handlePowerToggle() {
+  // Always reset these on every toggle
+  batteryMode = false;
+  batteryButtonPressed = false;
+  batteryButtonHandled = false;
+  batteryInterruptTriggered = false;
 
-    if (isOn) {
-      Serial.println("Sensor ON");
-      lcdDisplay.showPowerStatus(true);
-      powerManager.powerOnSystem();
-      lcdDisplay.printTemporaryMessage(wifiManager.isConnected() ? "WiFi: Connected" : "WiFi: Offline", 1500);
-      digitalWrite(POWER_LED_ON_PIN, HIGH);
-      digitalWrite(POWER_LED_OFF_PIN, LOW);
-      beepSound.beepBuzzer(150, 1);
+  if (isOn) {
+    Serial.println("Sensor ON");
+    lcdDisplay.showPowerStatus(true);
+    powerManager.powerOnSystem();
+    lcdDisplay.printTemporaryMessage(wifiManager.isConnected() ? "WiFi: Connected" : "WiFi: Offline", 1500);
+    digitalWrite(POWER_LED_ON_PIN, HIGH);
+    digitalWrite(POWER_LED_OFF_PIN, LOW);
+    beepSound.beepBuzzer(150, 1);
 
-      // Initialize sensors
-      soilSensor.update(true, true);  // We already reset batteryMode = false
-      tempSensor.lcdTemperatureSensor(true);
-      humiditySensor.update(true);
-      lastSensorUpdateTime = millis();
-    } else {
-      Serial.println("Sensor OFF");
-      lcdDisplay.showPowerStatus(false);
-      digitalWrite(POWER_LED_ON_PIN, LOW);
-      digitalWrite(POWER_LED_OFF_PIN, HIGH);
-      beepSound.beepBuzzer(150, 3);
+    // Initialize sensors
+    soilSensor.update(true);  // We already reset batteryMode = false
+    // tempSensor.lcdTemperatureSensor(true);
+    humiditySensor.update(true);
+    phSensor.readPhNonBlocking(true);
+    lastSensorUpdateTime = millis();
+  } else {
+    Serial.println("Sensor OFF");
+    lcdDisplay.showPowerStatus(false);
+    digitalWrite(POWER_LED_ON_PIN, LOW);
+    digitalWrite(POWER_LED_OFF_PIN, HIGH);
+    beepSound.beepBuzzer(150, 3);
 
-      // Turn off all indicators
-      digitalWrite(PH_RED_LED_PIN, LOW);
-      digitalWrite(PH_GREEN_LED_PIN, LOW);
-      digitalWrite(PH_BLUE_LED_PIN, LOW);
-      digitalWrite(PH_BUZZER_PIN, LOW);
-      digitalWrite(LED_SOIL_PIN, LOW);
-      digitalWrite(SOIL_BUZZER_PIN, LOW);
+    // Turn off all indicators
+    digitalWrite(PH_RED_LED_PIN, LOW);
+    digitalWrite(PH_GREEN_LED_PIN, LOW);
+    digitalWrite(PH_BLUE_LED_PIN, LOW);
+    digitalWrite(PH_BUZZER_PIN, LOW);
+    digitalWrite(LED_SOIL_PIN, LOW);
+    digitalWrite(SOIL_BUZZER_PIN, LOW);
 
-      // Update sensors
-      humiditySensor.forcePowerOffUpdate();
-      tempSensor.forcePowerOffUpdate();
-      soilSensor.forcePowerOffUpdate();
-    }
+    // Update sensors
+    humiditySensor.forcePowerOffUpdate();
+    // tempSensor.forcePowerOffUpdate();
+    soilSensor.forcePowerOffUpdate();
+    phSensor.forcePowerOffUpdate();
   }
+}
 
 void toggleBatteryMode() {
   batteryMode = !batteryMode;
@@ -255,7 +235,6 @@ void toggleBatteryMode() {
     Serial.println("Sensor Mode");
     lcdDisplay.printTemporaryMessage("Sensors Active", 1500);
     beepSound.beepBuzzer(150, 3);
-    // Sensors will update automatically in next loop()
   }
 }
 
@@ -287,8 +266,9 @@ void loop() {
   if (isOn && (millis() - lastSensorUpdateTime >= sensorUpdateInterval)) {
     lastSensorUpdateTime = millis();
     humiditySensor.update(!batteryMode);
-    tempSensor.requestTemperature();                // NEW function you will define
-    tempSensor.lcdTemperatureSensor(!batteryMode);  // NEW function you will define
-    soilSensor.update(true, !batteryMode);
+    // tempSensor.requestTemperature();                // NEW function you will define
+    // tempSensor.lcdTemperatureSensor(!batteryMode);  // NEW function you will define
+    soilSensor.update(!batteryMode);
+    phSensor.readPhNonBlocking(!batteryMode);
   }
 }

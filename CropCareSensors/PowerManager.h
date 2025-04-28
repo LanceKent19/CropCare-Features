@@ -17,7 +17,6 @@ public:
         if (!systemPoweredOn) {
             lcd.noBacklight();
             lcd.clear();
-            // lcd.print("SYSTEM OFF");
         }
     }
     

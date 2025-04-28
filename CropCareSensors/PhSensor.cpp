@@ -15,100 +15,91 @@ PhSensor::PhSensor(int pin, float caliVal, int redLed, int greenLed, int blueLed
   }
 }
 
-void PhSensor::begin() {
-  if (!powerManager.isSystemOn() && WiFi.status() == WL_CONNECTED) {
-    forcePowerOffUpdate();
-  }
-}
-
-void PhSensor::readPhNonBlocking() {
+void PhSensor::readPhNonBlocking(bool showOnLCD) {
   if (!powerManager.isSystemOn()) {
     lastPhValue = NAN;
     forcePowerOffUpdate();
     return;
   }
 
-  if (!isSampling) {
-    sampleIndex = 0;
-    isSampling = true;
-    lastReadTime = millis();
+  static unsigned long lastReadTime = 0;
+  if (millis() - lastReadTime < 1000) {
+    return; // Now 1 second interval (more stable)
+  }
+  lastReadTime = millis();
 
+  const int sampleCount = 20;
+  int buffer_arr[sampleCount];
+
+  // Sample readings
+  for (int i = 0; i < sampleCount; i++) {
+    buffer_arr[i] = analogRead(pin);
+    delayMicroseconds(300); // Tiny delay to let ADC stabilize
+  }
+
+  // Sort the array for median filtering
+  std::sort(buffer_arr, buffer_arr + sampleCount);
+
+  // Calculate the average of middle values (ignore outliers)
+  float avgval = 0;
+  for (int i = 5; i < 15; i++) { // Ignore lowest 5 and highest 5
+    avgval += buffer_arr[i];
+  }
+  avgval /= 10; // Average of 10 middle samples
+
+  // Calculate voltage and pH
+  float volt = (avgval * 3.3) / 4095.0;
+  float ph_act = -5.88 * volt + caliVal; // Updated calibration line
+
+  // Save last valid value
+  lastPhValue = ph_act;
+
+  if (showOnLCD) {
+    char buffer[16];
+    snprintf(buffer, sizeof(buffer), "PH: %.2f", ph_act);
     lcd.setCursor(0, 0);
-    lcd.print("PH:...");
-    lcd.print("   ");
-    lcd.setCursor(4, 0);
-    Serial.println("Start reading pH...");
+    lcd.print(buffer);
   }
 
-  if (isSampling && millis() - lastReadTime >= readInterval) {
-    lastReadTime = millis();
-    buffer_arr[sampleIndex++] = analogRead(pin);
+  Serial.print("Voltage: ");
+  Serial.println(volt, 2);
+  Serial.print("Ph Value: ");
+  Serial.println(ph_act, 2);
 
-    if (sampleIndex >= 10) {
-      isSampling = false;
-      unsigned long processingStart = millis();
+  sendPhToServer(ph_act);
+  updateIndicators(ph_act);
+}
 
-      // Sort and median average
-      for (int i = 0; i < 9; i++) {
-        for (int j = i + 1; j < 10; j++) {
-          if (buffer_arr[i] > buffer_arr[j]) {
-            int temp = buffer_arr[i];
-            buffer_arr[i] = buffer_arr[j];
-            buffer_arr[j] = temp;
-          }
-        }
-      }
+void PhSensor::updateIndicators(float ph_act) {
+  static unsigned long buzzerStartTime = 0;
+  static bool buzzerActive = false;
 
-      int avgval = 0;
-      for (int i = 2; i < 8; i++) avgval += buffer_arr[i];
-      avgval /= 6;
-
-      float voltage = (float)avgval * 2.5 / 4095.0;
-      float ph_act = -5.70 * voltage + caliVal;
-      lastPhValue = ph_act;
-
-      Serial.print("Finished analog reads in: ");
-      Serial.println(millis() - processingStart);
-
-      lcd.setCursor(0, 0);
-      lcd.print("PH:");
-      lcd.print(ph_act, 1);
-      lcd.print("   ");
-      lcd.setCursor(8, 0);
-
-      // Indicators without delay
-      buzzerStartTime = 0;
-      buzzerActive = false;
-
-      if (ph_act <= 6.5) {
-        digitalWrite(redLed, HIGH);
-        digitalWrite(greenLed, LOW);
-        digitalWrite(blueLed, LOW);
-        digitalWrite(buzzer, HIGH);
-        buzzerStartTime = millis();
-        buzzerActive = true;
-      } else if (ph_act <= 7.5) {
-        digitalWrite(redLed, LOW);
-        digitalWrite(greenLed, HIGH);
-        digitalWrite(blueLed, LOW);
-        digitalWrite(buzzer, LOW);
-      } else {
-        digitalWrite(redLed, LOW);
-        digitalWrite(greenLed, LOW);
-        digitalWrite(blueLed, HIGH);
-        digitalWrite(buzzer, HIGH);
-        buzzerStartTime = millis();
-        buzzerActive = true;
-      }
-
-      processingStart = millis();
-      sendPhToServer(ph_act);
-      Serial.print("Sent to server in: ");
-      Serial.println(millis() - processingStart);
-    }
+  if (ph_act <= 6.5) {
+    digitalWrite(redLed, HIGH);
+    digitalWrite(greenLed, LOW);
+    digitalWrite(blueLed, LOW);
+    digitalWrite(buzzer, HIGH);
+    buzzerStartTime = millis();
+    buzzerActive = true;
+    Serial.println("Acidic");
+  } else if (ph_act <= 7.5) {
+    digitalWrite(redLed, LOW);
+    digitalWrite(greenLed, HIGH);
+    digitalWrite(blueLed, LOW);
+    digitalWrite(buzzer, LOW);
+    buzzerActive = false;
+    Serial.println("Neutral");
+  } else {
+    digitalWrite(redLed, HIGH);
+    digitalWrite(greenLed, LOW);
+    digitalWrite(blueLed, LOW);
+    digitalWrite(buzzer, HIGH);
+    buzzerStartTime = millis();
+    buzzerActive = true;
+    Serial.println("Alkaline");
   }
 
-  // Handle buzzer timing
+  // Handle buzzer auto-off
   if (buzzerActive && millis() - buzzerStartTime >= 200) {
     digitalWrite(buzzer, LOW);
     buzzerActive = false;
@@ -120,7 +111,7 @@ void PhSensor::sendPhToServer(float phValue) {
   wifiManager.sendHTTPPost(serverURL, body);
 }
 
-void PhSensor::forcePowerOffUpdate() {
+void PhSensor::forcePowerOffUpdate() {  
   String body = "phSensor=-&powerState=off";
   wifiManager.sendHTTPPost(serverURL, body);
 }

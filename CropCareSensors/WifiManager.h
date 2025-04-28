@@ -18,8 +18,8 @@ public:
     : ssid(ssid), password(password) {
   }
   void setBeepSound(BeepSound* buzzer) {
-  beepSound = buzzer;
-}
+    beepSound = buzzer;
+  }
 
   void setLCD(LiquidCrystal_I2C* lcdDisplay) {
     lcd = lcdDisplay;
@@ -32,73 +32,82 @@ public:
     Serial.print("Connecting to WiFi");
 
     if (lcd) {
-        lcd->clear();
-        lcd->setCursor(0, 0);
-        lcd->print("Connecting WiFi");
+      lcd->clear();
+      lcd->setCursor(0, 0);
+      lcd->print("Connecting WiFi");
     }
 
     int dotCount = 0;
 
     while (WiFi.status() != WL_CONNECTED && millis() - startAttemptTime < timeoutMs) {
-        delay(500);
-        Serial.print(".");
-        if (lcd) {
-            lcd->setCursor(dotCount % 16, 1);
-            lcd->print(".");
-            dotCount++;
-        }
+      delay(500);
+      Serial.print(".");
+      if (lcd) {
+        lcd->setCursor(dotCount % 16, 1);
+        lcd->print(".");
+        dotCount++;
+      }
     }
 
     if (WiFi.status() == WL_CONNECTED) {
-        Serial.println("\nWiFi connected");
+      Serial.println("\nWiFi connected");
 
-        if (beepSound) beepSound->beepBuzzer(150, 1);  //  success beep
+      if (beepSound) beepSound->beepBuzzer(150, 1);  //  success beep
 
-        if (lcd) {
-            lcd->clear();
-            lcd->setCursor(4, 0);
-            lcd->print("Status:");
-            lcd->setCursor(1, 1);
-            lcd->print("WiFi Connected");
-            delay(1000);
-            lcd->noBacklight();
-        }
+      if (lcd) {
+        lcd->clear();
+        lcd->setCursor(4, 0);
+        lcd->print("Status:");
+        lcd->setCursor(1, 1);
+        lcd->print("WiFi Connected");
+        delay(1000);
+        lcd->noBacklight();
+      }
     } else {
-        Serial.println("\nWiFi connection failed, proceeding in offline mode.");
+      Serial.println("\nWiFi connection failed, proceeding in offline mode.");
 
-        if (beepSound) beepSound->beepBuzzer(150, 3);  //  failure beeps
+      if (beepSound) beepSound->beepBuzzer(150, 3);  //  failure beeps
 
-        if (lcd) {
-            lcd->clear();
-            lcd->setCursor(4, 0);
-            lcd->print("Status:");
-            lcd->setCursor(0, 1);
-            lcd->print("WiFi Not Connected");
-            delay(1000);
-            lcd->noBacklight();
-        }
+      if (lcd) {
+        lcd->clear();
+        lcd->setCursor(4, 0);
+        lcd->print("Status:");
+        lcd->setCursor(0, 1);
+        lcd->print("WiFi Not Connected");
+        delay(1000);
+        lcd->noBacklight();
+      }
     }
 
     delay(2000);
-}
+  }
 
   bool isConnected() {
     return WiFi.status() == WL_CONNECTED;
   }
 
-  void sendHTTPPost(const char* serverURL, const String& body) {  
-    if (!isConnected()) {
-      Serial.println("WiFi not connected");
-      return;
-    }
-
-    HTTPClient http;
-    http.begin(serverURL);
-    http.addHeader("Content-Type", "application/x-www-form-urlencoded");
-
-    int code = http.POST(body);
-    String response = http.getString();
-    http.end();
+void sendHTTPPost(const char* serverURL, const String& body) {  
+  if (!isConnected()) {
+    Serial.println("WiFi not connected");
+    return;
   }
+
+  HTTPClient http;
+  // http.setTimeout(5000);  // set timeout to 5 seconds
+  http.begin(serverURL);
+  http.addHeader("Content-Type", "application/x-www-form-urlencoded");
+  http.addHeader("Connection", "close");  // important!
+
+  int code = http.POST(body);
+  String response = http.getString();
+
+  Serial.print("HTTP Response code: ");
+  Serial.println(code);
+  Serial.print("Server response: ");
+  Serial.println(response);
+
+  http.end();
+}
+
 };
 #endif
