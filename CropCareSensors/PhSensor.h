@@ -35,9 +35,7 @@ private:
   WiFiManager& wifiManager;
   PowerManager& powerManager;
 
-  const char* serverURL = "http://192.168.100.42/Plant-disease-detection/update_ph.php";
-
-  
+  const char* serverURL = "https://cropcare.flashlearn.site/update_ph.php";
 
 public:
   PhSensor(int pin, float caliVal, int redLed, int greenLed, int blueLed, int buzzer,

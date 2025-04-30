@@ -13,7 +13,7 @@ private:                   // private objects so that we can only use it interna
   DallasTemperature sensors;
   LiquidCrystal_I2C& lcd;
   WiFiManager& wifiManager;
-  const char* serverURL = "http://192.168.100.42/Plant-disease-detection/update_temp.php";
+  const char* serverURL = "https://cropcare.flashlearn.site/update_temp.php";
 
 public:                                                // public objects so that we can call it outside the class
   TemperatureSensor(int pin, LiquidCrystal_I2C& lcd, WiFiManager &wifiManager);  // A constructor to pass the GPIO pin came from the user or initialized it from the main

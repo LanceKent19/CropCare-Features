@@ -5,7 +5,7 @@
 #include <HTTPClient.h>
 #include <LiquidCrystal_I2C.h>
 #include <BeepSound.h>
-
+#include <WiFiClientSecure.h>
 class WiFiManager {
 private:
   const char* ssid;
@@ -86,28 +86,29 @@ public:
     return WiFi.status() == WL_CONNECTED;
   }
 
-void sendHTTPPost(const char* serverURL, const String& body) {  
-  if (!isConnected()) {
-    Serial.println("WiFi not connected");
-    return;
+  void sendHTTPPost(const char* serverURL, const String& body) {
+    if (!isConnected()) {
+      Serial.println("WiFi not connected");
+      return;
+    }
+
+    WiFiClientSecure client;
+    client.setInsecure();  // WARNING: this skips SSL certificate verification
+
+    HTTPClient http;
+    http.begin(client, serverURL);  // Use secure client
+    http.addHeader("Content-Type", "application/x-www-form-urlencoded");
+    http.addHeader("Connection", "close");  // important!
+
+    int code = http.POST(body);
+    String response = http.getString();
+
+    Serial.print("HTTP Response code: ");
+    Serial.println(code);
+    Serial.print("Server response: ");
+    Serial.println(response);
+
+    http.end();
   }
-
-  HTTPClient http;
-  // http.setTimeout(5000);  // set timeout to 5 seconds
-  http.begin(serverURL);
-  http.addHeader("Content-Type", "application/x-www-form-urlencoded");
-  http.addHeader("Connection", "close");  // important!
-
-  int code = http.POST(body);
-  String response = http.getString();
-
-  Serial.print("HTTP Response code: ");
-  Serial.println(code);
-  Serial.print("Server response: ");
-  Serial.println(response);
-
-  http.end();
-}
-
 };
 #endif

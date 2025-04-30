@@ -12,7 +12,7 @@ private:
   Bonezegei_DHT11 dht;
   LiquidCrystal_I2C* lcd;
   WiFiManager& wifiManager;
-  const char* serverURL = "http://192.168.100.42/Plant-disease-detection/update_humidity.php";
+  const char* serverURL = "https://cropcare.flashlearn.site/update_humidity.php";
 
 public:
   HumiditySensor(int humidityPin, LiquidCrystal_I2C& display, WiFiManager& wifiManager);

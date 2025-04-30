@@ -118,8 +118,8 @@ void setup() {
   wifiManager.setBeepSound(&beepSound);
   wifiManager.connect(6000);
 
-  // tempSensor.begin();
-  // tempSensor.forcePowerOffUpdate();
+  tempSensor.begin();
+  tempSensor.forcePowerOffUpdate();
   humiditySensor.begin();
   humiditySensor.forcePowerOffUpdate();
   soilSensor.forcePowerOffUpdate();
@@ -190,7 +190,7 @@ void handlePowerToggle() {
 
     // Initialize sensors
     soilSensor.update(true);  // We already reset batteryMode = false
-    // tempSensor.lcdTemperatureSensor(true);
+    tempSensor.lcdTemperatureSensor(true);
     humiditySensor.update(true);
     phSensor.readPhNonBlocking(true);
     lastSensorUpdateTime = millis();
@@ -211,7 +211,7 @@ void handlePowerToggle() {
 
     // Update sensors
     humiditySensor.forcePowerOffUpdate();
-    // tempSensor.forcePowerOffUpdate();
+    tempSensor.forcePowerOffUpdate();
     soilSensor.forcePowerOffUpdate();
     phSensor.forcePowerOffUpdate();
   }
@@ -266,8 +266,8 @@ void loop() {
   if (isOn && (millis() - lastSensorUpdateTime >= sensorUpdateInterval)) {
     lastSensorUpdateTime = millis();
     humiditySensor.update(!batteryMode);
-    // tempSensor.requestTemperature();                // NEW function you will define
-    // tempSensor.lcdTemperatureSensor(!batteryMode);  // NEW function you will define
+    tempSensor.requestTemperature();                // NEW function you will define
+    tempSensor.lcdTemperatureSensor(!batteryMode);  // NEW function you will define
     soilSensor.update(!batteryMode);
     phSensor.readPhNonBlocking(!batteryMode);
   }
