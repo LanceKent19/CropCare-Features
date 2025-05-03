@@ -23,12 +23,14 @@
 
 #include "TemperatureSensor.h"
 #include "SoilMoistureSensor.h"
-#include "PhSensor.h"
+#include "PhSensor.h" 
 #include "HumiditySensor.h"
 #include "LCDDisplay.h"
 #include "BeepSound.h"
 #include "WifiManager.h"
 #include "PowerManager.h"
+#include "SensorData.h"  // Add this with other includes
+#include "Config.h"
 
 // Classes
 BeepSound beepSound(POWER_BUZZER_PIN);
@@ -77,7 +79,8 @@ void IRAM_ATTR handlePowerButtonInterrupt() {
 // Globals
 volatile bool batteryInterruptTriggered = false;
 unsigned long lastBatteryToggleTime = 0;
-
+  // Add this near your other defines
+const char* serverURL = "https://cropcare.flashlearn.site/update_sensors.php";
 void IRAM_ATTR handleBatteryButtonInterrupt() {
   batteryInterruptTriggered = true;
 }
@@ -265,10 +268,26 @@ void loop() {
   // Only update sensors if the system is ON and batteryMode is off.
   if (isOn && (millis() - lastSensorUpdateTime >= sensorUpdateInterval)) {
     lastSensorUpdateTime = millis();
+    
+    // Collect all sensor data
+    SensorData data;
+    data.powerState = "on";
+    
+    // Update sensors and collect data
     humiditySensor.update(!batteryMode);
-    tempSensor.requestTemperature();                // NEW function you will define
-    tempSensor.lcdTemperatureSensor(!batteryMode);  // NEW function you will define
+    data.humidity = humiditySensor.getLastValue();
+    
+    tempSensor.requestTemperature();
+    tempSensor.lcdTemperatureSensor(!batteryMode);
+    data.temperature = tempSensor.getLastValue();
+    
     soilSensor.update(!batteryMode);
+    data.moisturePercent = soilSensor.getLastValue();
+    
     phSensor.readPhNonBlocking(!batteryMode);
+    data.phValue = phSensor.getLastValue();
+
+    // Send all data in one HTTP request
+    wifiManager.sendAllSensorData(serverURL, data);
   }
 }

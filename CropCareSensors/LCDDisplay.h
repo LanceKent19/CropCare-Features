@@ -52,30 +52,6 @@ public:
     delay(durationMs);
     lcd.clear();
 } 
-  void displaySensorData(float ph, float temp, float moisture, float humidity) {
-    if (!isSystemOn) return;
-    
-    lcd.clear();
-    // Line 1: PH and Temperature
-    lcd.setCursor(0, 0);
-    lcd.print("PH:");
-    lcd.print(ph, 1);
-    lcd.setCursor(9, 0);
-    lcd.print("T:");
-    lcd.print(temp, 1);
-    lcd.print((char)223); // Degree symbol
-    lcd.print("C");
-    
-    // Line 2: Moisture and Humidity
-    lcd.setCursor(0, 1);
-    lcd.print("M:");
-    lcd.print(moisture, 0);
-    lcd.print("%");
-    lcd.setCursor(9, 1);
-    lcd.print("H:");
-    lcd.print(humidity, 0);
-    lcd.print("%");
-  }
 void printCenter(String message) {
     lcd.clear();
     lcd.setCursor((16 - message.length()) / 2, 0); // center horizontally

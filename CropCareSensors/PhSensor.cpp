@@ -1,5 +1,5 @@
 #include "PhSensor.h"
-
+#include "config.h"
 PhSensor::PhSensor(int pin, float caliVal, int redLed, int greenLed, int blueLed, int buzzer,
                    LiquidCrystal_I2C& lcd, WiFiManager& wifiManager, PowerManager& powerManager)
   : pin(pin), caliVal(caliVal), redLed(redLed), greenLed(greenLed), blueLed(blueLed),
@@ -56,17 +56,10 @@ void PhSensor::readPhNonBlocking(bool showOnLCD) {
 
   if (showOnLCD) {
     char buffer[16];
-    snprintf(buffer, sizeof(buffer), "PH: %.2f", ph_act);
+    snprintf(buffer, sizeof(buffer), "PH: %.2f", lastPhValue);
     lcd.setCursor(0, 0);
     lcd.print(buffer);
   }
-
-  Serial.print("Voltage: ");
-  Serial.println(volt, 2);
-  Serial.print("Ph Value: ");
-  Serial.println(ph_act, 2);
-
-  sendPhToServer(ph_act);
   updateIndicators(ph_act);
 }
 
@@ -78,7 +71,7 @@ void PhSensor::updateIndicators(float ph_act) {
     digitalWrite(redLed, HIGH);
     digitalWrite(greenLed, LOW);
     digitalWrite(blueLed, LOW);
-    digitalWrite(buzzer, HIGH);
+    // digitalWrite(buzzer, HIGH);
     buzzerStartTime = millis();
     buzzerActive = true;
     Serial.println("Acidic");
@@ -86,14 +79,14 @@ void PhSensor::updateIndicators(float ph_act) {
     digitalWrite(redLed, LOW);
     digitalWrite(greenLed, HIGH);
     digitalWrite(blueLed, LOW);
-    digitalWrite(buzzer, LOW);
+    // digitalWrite(buzzer, LOW);
     buzzerActive = false;
     Serial.println("Neutral");
   } else {
     digitalWrite(redLed, HIGH);
     digitalWrite(greenLed, LOW);
     digitalWrite(blueLed, LOW);
-    digitalWrite(buzzer, HIGH);
+    // digitalWrite(buzzer, HIGH);
     buzzerStartTime = millis();
     buzzerActive = true;
     Serial.println("Alkaline");
@@ -105,13 +98,9 @@ void PhSensor::updateIndicators(float ph_act) {
     buzzerActive = false;
   }
 }
-
-void PhSensor::sendPhToServer(float phValue) {
-  String body = "phSensor=" + String(phValue, 2) + "&powerState=on";
-  wifiManager.sendHTTPPost(serverURL, body);
-}
-
 void PhSensor::forcePowerOffUpdate() {  
-  String body = "phSensor=-&powerState=off";
-  wifiManager.sendHTTPPost(serverURL, body);
+  SensorData data;
+  data.powerState = "off";
+  data.phValue = NAN;
+  wifiManager.sendAllSensorData(serverURL, data);
 }

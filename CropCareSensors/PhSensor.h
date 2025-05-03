@@ -35,16 +35,14 @@ private:
   WiFiManager& wifiManager;
   PowerManager& powerManager;
 
-  const char* serverURL = "https://cropcare.flashlearn.site/update_ph.php";
-
 public:
   PhSensor(int pin, float caliVal, int redLed, int greenLed, int blueLed, int buzzer,
            LiquidCrystal_I2C& lcd, WiFiManager& wifiManager, PowerManager& powerManager);
             
   void startNewReading();
+  float getLastValue() const { return lastPhValue; } // Add this method
   void readPhNonBlocking(bool showOnLCD);
   void forcePowerOffUpdate();
-  void sendPhToServer(float phValue);
   void updateIndicators(float ph_act);
 };
 

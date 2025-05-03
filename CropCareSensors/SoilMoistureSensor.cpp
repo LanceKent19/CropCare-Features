@@ -1,5 +1,5 @@
-  #include "SoilMoistureSensor.h"
-
+ #include "SoilMoistureSensor.h"
+ #include "Config.h"
   SoilMoistureSensor::SoilMoistureSensor(int pin, int dryVal, int wetVal, int ledPin, int buzzerPin, LiquidCrystal_I2C &lcd, WiFiManager &wifiManager)
     : pin(pin), dryValue(dryVal), wetValue(wetVal), ledPin(ledPin), buzzerPin(buzzerPin), lcd(lcd), wifiManager(wifiManager),
       dryTimerStarted(false), dryStartTime(0), ledState(false) {}
@@ -11,17 +11,15 @@
   int SoilMoistureSensor::getMoisturePercent() {
     int value = readValue();
     int percent = 100 - ((value - wetValue) * 100 / (dryValue - wetValue));
-    return constrain(percent, 0, 100);
-  }
-
-  void SoilMoistureSensor::sendMoistToServer(int moisture) {
-    String body = "moistureSensor=" + String(moisture) + "&powerState=on";
-    wifiManager.sendHTTPPost(serverURL, body);
+    lastMoisture = constrain(percent, 0, 100); 
+    return lastMoisture;
   }
 
   void SoilMoistureSensor::forcePowerOffUpdate() {
-    String body = "moistureSensor=-&powerState=off";
-    wifiManager.sendHTTPPost(serverURL, body);
+  SensorData data;
+  data.powerState = "off";
+  data.moisturePercent = -1;
+  wifiManager.sendAllSensorData(serverURL, data);
   }
 
   void SoilMoistureSensor::update(bool showOnLCD) {
@@ -60,14 +58,10 @@
     Serial.print(moisture);
     Serial.println(" %");
 
-    // Serial.print("Condition: ");
-    // Serial.println(condition);
-
     if (showOnLCD) {
       char buffer[16];
       sprintf(buffer, "MP:%3d%%", moisture);  // right-aligned in 3 spaces
       lcd.setCursor(0, 1);
       lcd.print(buffer);
     }
-    sendMoistToServer(moisture);
   }
