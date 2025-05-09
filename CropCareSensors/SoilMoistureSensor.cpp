@@ -18,7 +18,7 @@
   void SoilMoistureSensor::forcePowerOffUpdate() {
   SensorData data;
   data.powerState = "off";
-  data.moisturePercent = -1;
+  data.moisture = -1;
   wifiManager.sendAllSensorData(serverURL, data);
   }
 

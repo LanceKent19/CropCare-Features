@@ -19,7 +19,7 @@
 #define SDA 21
 
 #define HUMIDITY_PIN 19
-#define BATTERY_TOGGLE_PIN 33
+#define BATTERY_TOGGLE_PIN 33z
 
 #include "TemperatureSensor.h"
 #include "SoilMoistureSensor.h"
@@ -34,7 +34,7 @@
 
 // Classes
 BeepSound beepSound(POWER_BUZZER_PIN);
-WiFiManager wifiManager("THE MAGOLLADOS'S", "DEMO POWER");
+WiFiManager wifiManager("THE MAGOLLADOS'S", "DEMO POWER");  
 LCDDisplay lcdDisplay;
 PowerManager powerManager(lcdDisplay.getLCD());
 TemperatureSensor tempSensor(TEMPERATURE_PIN, lcdDisplay.getLCD(), wifiManager);
@@ -80,7 +80,7 @@ void IRAM_ATTR handlePowerButtonInterrupt() {
 volatile bool batteryInterruptTriggered = false;
 unsigned long lastBatteryToggleTime = 0;
   // Add this near your other defines
-const char* serverURL = "https://cropcare.flashlearn.site/update_sensors.php";
+const char* serverURL = "https://cropcare.flashlearn.site/sse_updates.php";
 void IRAM_ATTR handleBatteryButtonInterrupt() {
   batteryInterruptTriggered = true;
 }
@@ -269,9 +269,8 @@ void loop() {
   if (isOn && (millis() - lastSensorUpdateTime >= sensorUpdateInterval)) {
     lastSensorUpdateTime = millis();
     
-    // Collect all sensor data
-    SensorData data;
-    data.powerState = "on";
+      SensorData data;
+    data.powerState = isOn ? "on" : "off";
     
     // Update sensors and collect data
     humiditySensor.update(!batteryMode);
@@ -282,10 +281,10 @@ void loop() {
     data.temperature = tempSensor.getLastValue();
     
     soilSensor.update(!batteryMode);
-    data.moisturePercent = soilSensor.getLastValue();
+    data.moisture = soilSensor.getLastValue();
     
     phSensor.readPhNonBlocking(!batteryMode);
-    data.phValue = phSensor.getLastValue();
+    data.ph = phSensor.getLastValue();
 
     // Send all data in one HTTP request
     wifiManager.sendAllSensorData(serverURL, data);

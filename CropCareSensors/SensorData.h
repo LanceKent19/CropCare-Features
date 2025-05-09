@@ -2,15 +2,15 @@
 #define SENSOR_DATA_H
 
 struct SensorData {
-  float phValue = NAN;
-  int moisturePercent = -1;
+  float ph = NAN;
+  int moisture = -1;
   float temperature = NAN;
   int humidity = NAN;
   String powerState = "off";
   
   bool anySensorFailed() const {
-    return isnan(phValue) || 
-           moisturePercent == -1 || 
+    return isnan(ph) || 
+           moisture == -1 || 
            isnan(temperature) || 
            isnan(humidity);
   }
