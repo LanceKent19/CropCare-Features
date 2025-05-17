@@ -21,7 +21,7 @@ public:                                                // public objects so that
   float getLastValue() const { return lastTemperature; } // Add this method                             
   float getFahrenheit();                               // Getter for returning the value fahrenheit
   void requestTemperature();
-  void lcdTemperatureSensor(bool showOnLCD);
+  void lcdTemperatureSensor();
   void forcePowerOffUpdate();  // Add this to support OFF updates
 };
 

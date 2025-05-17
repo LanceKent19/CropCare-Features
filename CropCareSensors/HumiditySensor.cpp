@@ -7,19 +7,18 @@ void HumiditySensor::begin() {
   dht.begin();
 }
 
-void HumiditySensor::update(bool showOnLCD) {
+void HumiditySensor::update() {
   if (dht.getData()) {
       lastHumidity = dht.getHumidity(); // Store the value
     Serial.print("Humidity: ");
     Serial.print(lastHumidity);
     Serial.println(" %");
 
-  if (showOnLCD) {
+
     char buffer[16];
     sprintf(buffer, "Hum:%3d%%", lastHumidity);  // right-aligned in 3 spaces
     lcd->setCursor(8, 1);
     lcd->print(buffer);
-  }
   } else {
     lastHumidity = NAN; // Mark as invalid on failure
     Serial.println("Failed to read humidity");

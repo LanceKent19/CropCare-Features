@@ -41,7 +41,7 @@ public:
             
   void startNewReading();
   float getLastValue() const { return lastPhValue; } // Add this method
-  void readPhNonBlocking(bool showOnLCD);
+  void readPhNonBlocking();
   void forcePowerOffUpdate();
   void updateIndicators(float ph_act);
 };

@@ -22,7 +22,7 @@
   wifiManager.sendAllSensorData(serverURL, data);
   }
 
-  void SoilMoistureSensor::update(bool showOnLCD) {
+  void SoilMoistureSensor::update() {
     int moisture = getMoisturePercent();
     String condition;
 
@@ -58,10 +58,8 @@
     Serial.print(moisture);
     Serial.println(" %");
 
-    if (showOnLCD) {
       char buffer[16];
       sprintf(buffer, "MP:%3d%%", moisture);  // right-aligned in 3 spaces
       lcd.setCursor(0, 1);
       lcd.print(buffer);
-    }
   }

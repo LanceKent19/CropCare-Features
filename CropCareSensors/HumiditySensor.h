@@ -18,7 +18,7 @@ public:
   HumiditySensor(int humidityPin, LiquidCrystal_I2C& display, WiFiManager& wifiManager);
   void begin();
   int getLastValue() const { return lastHumidity; } // Add this method
-  void update(bool showOnLCD = false);
+  void update();
   void forcePowerOffUpdate();  // Add this to support OFF updates
 };
 

@@ -23,7 +23,7 @@ public:
   int getMoisturePercent();
   int getLastValue() const { return lastMoisture; } // Add this method
 
-  void update(bool showOnLCD);
+  void update();
 
   void forcePowerOffUpdate();
 };
